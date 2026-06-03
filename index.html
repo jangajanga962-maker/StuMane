@@ -1323,6 +1323,7 @@ const Manage = {
       App.boot();
     });
   }
+<<<<<<< HEAD
 };reset(){
     confirmDialog('全ての記録・目標・設定・アカウントを削除します。\nこの操作は取り消せません。',async ()=>{
       if(Auth.enabled() && Auth.loggedIn()){
@@ -1336,6 +1337,11 @@ const Manage = {
         Auth.clear();
       }
       Store.reset(); Modal.close();
+            State.timer={running:false,startTs:null,elapsedSec:0}; State.sel={subjectId:null,materialId:null,locationId:null};
+      App.boot();
+    });
+  }
+
 
 /* ---------------- shared view head ---------------- */
 function viewHead(title,tag,sub){
