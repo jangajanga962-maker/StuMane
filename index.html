@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>STUDYMANAGER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@300..900&family=DM+Mono:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   studymanager
+   ---------------------------------------------------------------------
+   構造（修正時はこの区分に沿って該当ブロックだけ触れば壊れません）
+     1. DESIGN TOKENS  : 色・余白・フォント等のCSS変数（見た目の一元管理）
+     2. BASE / LAYOUT  : 土台・アプリシェル・ナビ
+     3. COMPONENTS     : ボタン/チップ/カード/モーダル等の共通部品
+     4. VIEWS          : 各タブ固有のスタイル
+   JS側も同様に [CONFIG][STORE][UTIL][STATE][COMPONENTS][VIEWS][APP] に分離。
+   ===================================================================== */
+
+/* ---------- 1. DESIGN TOKENS ---------- */
+:root{
+  --bg:        #000000;
+  --bg-1:      #0a0a0a;   /* パネル */
+  --bg-2:      #141414;   /* 入力欄 / ホバー */
+  --line:      rgba(255,255,255,0.12);
+  --line-soft: rgba(255,255,255,0.06);
+  --fg:        #f2f2f2;
+  --fg-dim:    #8a8a8a;
+  --fg-faint:  #555555;
+  --accent:    #ff3b30;   /* Nothing signature red */
+  --accent-dim:#7a1d18;
+  --ok:        #d8d8d8;
+
+  /* テーマ差分用（ダーク既定値）。ライトでは下の :root.theme-light で上書き */
+  --on-fg:     #000000;   /* --fg を背景にしたボタン等の前景色 */
+  --fg-strong: #ffffff;   /* primaryボタンのホバー背景 */
+  --bar-bg:    rgba(0,0,0,0.85);          /* 上下バーの半透明背景 */
+  --dot:       rgba(255,255,255,0.045);   /* 背景ドットグリッドの色 */
+
+  --r:   0px;             /* 角丸ゼロ（インダストリアル） */
+  --r-pill: 999px;
+  --sp: 16px;
+
+  --f-disp: 'Doto', 'Noto Sans JP', monospace;   /* ドットマトリクス表示用 */
+  --f-mono: 'DM Mono', 'Noto Sans JP', monospace; /* 技術的UI / 本文 */
+  --nav-w: 230px;
+}
+
+/* ---------- ライトテーマ（白基調）。<html> に theme-light を付与で有効化 ---------- *
+ * 配色はこのブロックの変数だけで完結。色を足したいときも基本ここを直す。           */
+:root.theme-light{
+  --bg:        #ffffff;
+  --bg-1:      #f4f4f4;   /* パネル */
+  --bg-2:      #e9e9e9;   /* 入力欄 / ホバー */
+  --line:      rgba(0,0,0,0.30);   /* 境界線（濃いめ） */
+  --line-soft: rgba(0,0,0,0.16);
+  --fg:        #0d0d0d;
+  --fg-dim:    #444444;   /* 補助テキスト（濃いめ） */
+  --fg-faint:  #707070;   /* 最も淡いテキストでも視認可 */
+  --accent:    #ff3b30;   /* レッドは共通 */
+  --accent-dim:#e89490;
+  --ok:        #2b2b2b;
+  --on-fg:     #ffffff;   /* 暗い --fg 背景に乗る前景 */
+  --fg-strong: #000000;
+  --bar-bg:    rgba(255,255,255,0.90);
+  --dot:       rgba(0,0,0,0.08);   /* 背景ドットも少し濃く */
+}
+
+/* ---------- 2. BASE / LAYOUT ---------- */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:var(--f-mono);
+  font-size:14px;
+  line-height:1.5;
+  letter-spacing:0.02em;
+  /* Nothing風ドットグリッドの質感 */
+  background-image:radial-gradient(var(--dot) 1px, transparent 1px);
+  background-size:22px 22px;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:var(--bg-2);}
+::selection{background:var(--accent);color:#000;}
+
+.dot-label{font-family:var(--f-disp);text-transform:lowercase;letter-spacing:0.12em;}
+.mono-up{font-family:var(--f-mono);text-transform:uppercase;letter-spacing:0.18em;font-size:11px;color:var(--fg-dim);}
+
+/* --- App shell --- */
+#app{min-height:100vh;}
+.app-shell{display:flex;min-height:100vh;}
+
+/* Header（モバイル上部 / PC上部共通） */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--line);
+  position:sticky;top:0;background:var(--bar-bg);backdrop-filter:blur(8px);z-index:30;
+}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand .glyph{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);}
+.brand .name{font-family:var(--f-disp);font-weight:600;letter-spacing:0.18em;font-size:15px;}
+.avatar{
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+  background:var(--bg-2);color:var(--fg);font-family:var(--f-disp);font-weight:700;
+  display:grid;place-items:center;cursor:pointer;font-size:14px;
+}
+.avatar:hover{border-color:var(--accent);}
+
+/* モバイルでcontent-colが画面幅いっぱいに広がるよう明示 */
+.content-col{width:100%;min-width:0;}
+.panel{overflow:hidden;}   /* datetime-local等の最小幅オーバーフローを防ぐ */
+
+/* Side nav (PC/iPad) */
+.sidenav{display:none;}
+@media(min-width:768px){
+  .app-shell{flex-direction:row;}
+  .sidenav{
+    display:flex;flex-direction:column;width:var(--nav-w);flex:0 0 var(--nav-w);
+    border-right:1px solid var(--line);padding:18px 0;position:sticky;top:0;height:100vh;
+  }
+  .sidenav-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 18px 22px;}
+  .sidenav .brand{padding:0;}
+  .sidenav{transition:width .2s ease,flex-basis .2s ease;}
+  /* --- 折りたたみ時（横画面サイドナビ） --- */
+  .app-shell.nav-collapsed .sidenav{width:66px;flex-basis:66px;}
+  .app-shell.nav-collapsed .sidenav-head{justify-content:center;}
+  .app-shell.nav-collapsed .sidenav-head .brand{display:none;}
+  .app-shell.nav-collapsed .nav-item{justify-content:center;gap:0;padding-left:0;padding-right:0;}
+  .app-shell.nav-collapsed .nav-item .lbl{display:none;}
+  .app-shell.nav-collapsed .nav-item .idx{width:auto;text-align:center;}
+  .content-col{flex:1;min-width:0;}
+  .topbar{display:none;}        /* PCではサイドにブランド、上部バー非表示 */
+  .pc-topbar{display:flex !important;}
+  .bottomnav{display:none !important;}
+}
+.pc-topbar{display:none;align-items:center;justify-content:flex-end;padding:14px 24px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bar-bg);backdrop-filter:blur(8px);z-index:20;}
+.nav-toggle{width:30px;height:30px;border:1px solid var(--line);background:var(--bg-2);color:var(--fg-dim);display:grid;place-items:center;cursor:pointer;font-family:var(--f-mono);font-size:15px;line-height:1;flex:0 0 auto;}
+.nav-toggle:hover{color:var(--fg);border-color:var(--fg);}
+
+.nav-item{
+  display:flex;align-items:center;gap:14px;width:100%;background:none;border:none;
+  padding:13px 22px;cursor:pointer;color:var(--fg-dim);text-align:left;position:relative;
+}
+.nav-item .idx{font-family:var(--f-disp);font-size:12px;color:var(--fg-faint);width:26px;}
+.nav-item .lbl{font-family:var(--f-disp);letter-spacing:0.1em;font-size:15px;text-transform:lowercase;}
+.nav-item:hover{color:var(--fg);}
+.nav-item.active{color:var(--fg);}
+.nav-item.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;background:var(--accent);}
+.nav-item.active .idx{color:var(--accent);}
+
+/* Bottom nav (mobile) */
+.bottomnav{
+  display:flex;position:fixed;bottom:0;left:0;right:0;z-index:30;
+  background:var(--bar-bg);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.bottomnav .nav-item{flex-direction:column;gap:3px;align-items:center;padding:10px 4px;}
+.bottomnav .nav-item .idx{display:none;}
+.bottomnav .nav-item.active::before{left:50%;transform:translateX(-50%);top:0;bottom:auto;width:24px;height:3px;}
+
+/* Main content */
+.main{padding:24px 18px 110px;max-width:920px;margin:0 auto;width:100%;}
+@media(min-width:768px){.main{padding:30px 34px 60px;}}
+
+.view-head{display:flex;align-items:baseline;gap:12px;margin-bottom:24px;}
+.view-head h1{font-family:var(--f-disp);font-weight:600;font-size:30px;letter-spacing:0.06em;text-transform:lowercase;}
+.view-head .tag{font-family:var(--f-disp);font-size:13px;color:var(--accent);}
+.view-sub{color:var(--fg-dim);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;margin-top:-16px;margin-bottom:24px;}
+
+/* ---------- 3. COMPONENTS ---------- */
+.panel{background:var(--bg-1);border:1px solid var(--line);padding:20px;}
+.panel + .panel{margin-top:16px;}
+.sect-title{font-family:var(--f-mono);text-transform:uppercase;letter-spacing:0.2em;font-size:11px;color:var(--fg-dim);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.sect-title::before{content:"";width:6px;height:6px;background:var(--accent);display:inline-block;}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid var(--line);background:transparent;color:var(--fg);
+  padding:12px 20px;cursor:pointer;letter-spacing:0.12em;text-transform:uppercase;font-size:12px;
+  transition:all .15s ease;
+}
+.btn:hover{border-color:var(--fg);}
+.btn:active{transform:translateY(1px);}
+.btn-primary{background:var(--fg);color:var(--on-fg);border-color:var(--fg);}
+.btn-primary:hover{background:var(--fg-strong);}
+.btn-accent{background:var(--accent);color:#000;border-color:var(--accent);font-weight:500;}
+.btn-accent:hover{filter:brightness(1.1);}
+.btn-ghost{border-color:transparent;color:var(--fg-dim);padding:8px 12px;}
+.btn-ghost:hover{color:var(--fg);border-color:var(--line);}
+.btn-danger{border-color:var(--accent-dim);color:var(--accent);}
+.btn-danger:hover{background:var(--accent);color:#000;border-color:var(--accent);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn-block{width:100%;}
+.btn-lg{padding:18px;font-size:13px;}
+
+.chip{
+  display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);
+  background:transparent;color:var(--fg-dim);padding:8px 14px;cursor:pointer;
+  border-radius:var(--r-pill);font-size:13px;transition:all .12s ease;white-space:nowrap;
+}
+.chip:hover{color:var(--fg);border-color:var(--fg-dim);}
+.chip.on{border-color:var(--fg);color:var(--fg);background:var(--bg-2);}
+.chip .swatch{width:9px;height:9px;border-radius:50%;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.16em;color:var(--fg-dim);margin-bottom:7px;}
+.input,.textarea,.select{
+  width:100%;box-sizing:border-box;background:var(--bg-2);border:1px solid var(--line);color:var(--fg);
+  padding:12px 14px;border-radius:var(--r);
+}
+.input:focus,.textarea:focus,.select:focus{outline:none;border-color:var(--accent);}
+input[type="datetime-local"]{-webkit-appearance:none;appearance:none;width:100%;max-width:100%;}
+.textarea{resize:vertical;min-height:70px;}
+.row{display:flex;gap:12px;}
+.row > *{flex:1;min-width:0;}
+
+.empty{color:var(--fg-faint);text-align:center;padding:40px 10px;font-size:13px;letter-spacing:0.1em;}
+
+/* Modal */
+.modal-root{position:fixed;inset:0;z-index:100;display:none;}
+.modal-root.open{display:block;}
+.modal-bg{position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(3px);}
+.modal{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(560px,calc(100vw - 32px));max-height:88vh;overflow:auto;
+  background:var(--bg-1);border:1px solid var(--line);
+}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg-1);}
+.modal-head h2{font-family:var(--f-disp);font-size:18px;letter-spacing:0.08em;text-transform:lowercase;}
+.modal-body{padding:20px;}
+.modal-foot{padding:16px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;}
+.x-btn{background:none;border:1px solid var(--line);color:var(--fg-dim);width:30px;height:30px;cursor:pointer;}
+.x-btn:hover{color:var(--fg);border-color:var(--fg);}
+
+/* Floating add button */
+.fab{
+  position:fixed;right:20px;bottom:90px;width:56px;height:56px;border-radius:50%;
+  background:var(--accent);color:#000;border:none;cursor:pointer;font-size:26px;
+  display:grid;place-items:center;z-index:40;box-shadow:0 6px 24px rgba(255,59,48,0.35);
+}
+@media(min-width:768px){.fab{bottom:34px;right:34px;}}
+.fab:active{transform:scale(.94);}
+
+/* ---------- 4. VIEWS ---------- */
+/* Record */
+.sw-display{font-family:var(--f-disp);font-size:64px;font-weight:500;letter-spacing:0.04em;text-align:center;padding:14px 0 6px;line-height:1;}
+@media(min-width:768px){.sw-display{font-size:84px;}}
+.sw-state{text-align:center;color:var(--fg-dim);font-size:11px;letter-spacing:0.25em;text-transform:uppercase;margin-bottom:18px;}
+.sw-state.live{color:var(--accent);}
+.mode-toggle{display:flex;border:1px solid var(--line);margin-bottom:20px;}
+.mode-toggle button{flex:1;background:none;border:none;color:var(--fg-dim);padding:12px;cursor:pointer;text-transform:uppercase;letter-spacing:0.14em;font-size:11px;}
+.mode-toggle button.on{background:var(--fg);color:var(--on-fg);}
+
+.rec-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-soft);}
+.rec-item:last-child{border-bottom:none;}
+.rec-item .bar{width:3px;align-self:stretch;background:var(--fg-faint);}
+.rec-item .meta{flex:1;min-width:0;}
+.rec-item .meta .t{font-size:13px;}
+.rec-item .meta .s{font-size:11px;color:var(--fg-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rec-item .dur{font-family:var(--f-disp);font-size:16px;}
+
+/* Goals */
+.goal-card{border:1px solid var(--line);padding:18px;margin-bottom:14px;position:relative;}
+.goal-card .gc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.goal-card .gc-name{display:flex;align-items:center;gap:9px;font-size:15px;}
+.goal-card .gc-pct{font-family:var(--f-disp);font-size:30px;line-height:1;}
+.progress{height:6px;background:var(--bg-2);border:1px solid var(--line-soft);overflow:hidden;}
+.progress > i{display:block;height:100%;background:var(--accent);transition:width .5s ease;}
+.goal-card .gc-meta{display:flex;justify-content:space-between;margin-top:12px;font-size:11px;color:var(--fg-dim);letter-spacing:0.05em;}
+.goal-card .gc-edit{position:absolute;top:12px;right:12px;}
+.goal-card .gc-type{font-size:10px;letter-spacing:0.1em;color:var(--fg-dim);border:1px solid var(--line);border-radius:999px;padding:2px 9px;}
+
+/* Calendar */
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.cal-head .m{font-family:var(--f-disp);font-size:22px;letter-spacing:0.06em;}
+.cal-nav{display:flex;gap:8px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-dow{text-align:center;font-size:10px;color:var(--fg-faint);text-transform:uppercase;letter-spacing:0.1em;padding-bottom:6px;}
+.cal-cell{aspect-ratio:1;border:1px solid var(--line-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;position:relative;}
+.cal-cell.empty{border-color:transparent;cursor:default;}
+.cal-cell.today{border-color:var(--accent);}
+.cal-cell.sel{background:var(--bg-2);border-color:var(--fg);}
+.cal-cell .d{font-family:var(--f-disp);font-size:14px;color:var(--fg-dim);}
+.cal-cell.has .d{color:var(--fg);}
+.cal-cell .dots{display:flex;gap:3px;flex-wrap:wrap;justify-content:center;max-width:80%;}
+.cal-cell .dots i{width:5px;height:5px;border-radius:50%;}
+.day-detail{margin-top:18px;}
+
+/* Report */
+.kpi-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;}
+@media(max-width:520px){.kpi-row{grid-template-columns:1fr;}}
+.kpi{border:1px solid var(--line);padding:16px;}
+.kpi .k{font-size:10px;text-transform:uppercase;letter-spacing:0.16em;color:var(--fg-dim);margin-bottom:8px;}
+.kpi .v{font-family:var(--f-disp);font-size:26px;line-height:1;}
+.kpi .v.pos{color:var(--accent);}
+.kpi .v.neg{color:var(--fg-dim);}
+.wk-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.wk-nav .rng{font-family:var(--f-disp);font-size:15px;letter-spacing:0.04em;}
+.bars{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:8px;}
+.bars .b{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;}
+.bars .b .col{width:100%;background:var(--bg-2);border:1px solid var(--line);position:relative;min-height:2px;transition:height .4s ease;}
+.bars .b .col > i{position:absolute;bottom:0;left:0;right:0;background:var(--fg);}
+.bars .b.peak .col > i{background:var(--accent);}
+.bars .b .lab{font-size:10px;color:var(--fg-dim);}
+.subj-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:12px;}
+.subj-row .nm{width:84px;flex:0 0 84px;display:flex;align-items:center;gap:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.subj-row .track{flex:1;height:8px;background:var(--bg-2);border:1px solid var(--line-soft);}
+.subj-row .track > i{display:block;height:100%;}
+.subj-row .val{font-family:var(--f-disp);width:64px;text-align:right;flex:0 0 64px;}
+
+/* Manage / user menu */
+.menu-list{display:flex;flex-direction:column;}
+.menu-list button{display:flex;align-items:center;justify-content:space-between;background:none;border:none;border-bottom:1px solid var(--line-soft);color:var(--fg);padding:15px 4px;cursor:pointer;text-align:left;}
+.menu-list button:hover{color:var(--accent);}
+.menu-list button .arr{color:var(--fg-faint);}
+.list-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-soft);}
+.list-item .grow{flex:1;min-width:0;}
+.list-item .sub{font-size:11px;color:var(--fg-dim);}
+.swatch-pick{display:flex;gap:8px;flex-wrap:wrap;}
+.swatch-pick button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;}
+.swatch-pick button.on{border-color:var(--fg);}
+
+/* Setup */
+.setup{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;}
+.setup .big{font-family:var(--f-disp);font-size:46px;letter-spacing:0.1em;margin-bottom:8px;}
+.setup .glyph-lg{width:18px;height:18px;border-radius:50%;background:var(--accent);box-shadow:0 0 24px var(--accent);margin-bottom:26px;}
+.setup p{color:var(--fg-dim);margin-bottom:30px;letter-spacing:0.1em;font-size:12px;text-transform:uppercase;}
+.setup .form{width:min(360px,100%);}
+.auth-msg{min-height:18px;font-size:12px;color:var(--accent);letter-spacing:0.04em;margin:4px 0 14px;text-align:center;}
+.link-btn{display:block;width:100%;background:none;border:none;color:var(--fg-dim);text-decoration:underline;cursor:pointer;font-family:var(--f-mono);font-size:12px;margin-top:20px;letter-spacing:0.04em;}
+.link-btn:hover{color:var(--fg);}
+.sync-badge{font-family:var(--f-mono);font-size:10px;letter-spacing:0.06em;color:var(--fg-dim);margin:0 12px;white-space:nowrap;}
+.sync-badge.ok{color:#6be07a;}
+.sync-badge.warn{color:var(--accent);}
+.topbar .sync-badge{margin-left:auto;}
+
+.fade{animation:fade .35s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root" class="modal-root"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   JS MODULES
+   [CONFIG] 既定データ・定数
+   [STORE]  localStorage抽象 + データCRUD（単一の真実）
+   [UTIL]   日付/整形/汎用
+   [STATE]  実行時の状態（タブ・タイマー等）
+   [DOM]    生成ヘルパ
+   [COMPONENTS] モーダル/チップ等
+   [VIEWS]  タブごとの描画（record/goals/calendar/report）
+   [MANAGE] ユーザーメニュー（科目/教材/場所/プロフィール/書出/ログアウト/リセット）
+   [APP]    シェル・ルーティング・初期化
+   修正時は該当モジュールのみ編集。各VIEWは independent な mount(el) を持ち、
+   再描画は App.renderMain() が担当するため相互依存しません。
+   ===================================================================== */
+
+/* ---------------- [CONFIG] ---------------- */
+const CONFIG = {
+  KEY: 'studymanager.v1',          // 保存キー（スキーマ変更時はここを上げる）
+
+  /* ========================================================================
+   *  クラウド同期設定（メール＋パスワード / Firebase REST API のみ・SDK不使用）
+   *  ここを空のままにすると「ローカル専用」で従来どおり動作します。
+   *  複数端末で同期したい場合のみ、自分の Firebase プロジェクトの値を入れる。
+   *    1) console.firebase.google.com でプロジェクト作成
+   *    2) Authentication → Sign-in method →「メール / パスワード」を有効化
+   *    3) Realtime Database を作成（ロケーション選択）
+   *    4) 下の apiKey と databaseURL を貼り付け
+   *    5) 必ず GitHub Pages 等にアップしてから動作確認（プレビューは通信不可）
+   *  Realtime Database のルール（各ユーザーが自分の領域のみ読み書き）:
+   *    { "rules": { "users": { "$uid": {
+   *        ".read": "$uid === auth.uid", ".write": "$uid === auth.uid" } } } }
+   * ====================================================================== */
+  firebase: {
+    apiKey:      '',   // 例: 'AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+    databaseURL: '',   // 例: 'https://xxxx-default-rtdb.firebaseio.com'
+  },
+  AUTH_KEY: 'studymanager.auth.v1',                 // 認証セッションの保存キー（本体データとは別管理）
+  CLOUD_KEYS: ['profile','settings','subjects','materials','locations','records','goals'], // 同期対象（sessionは除外）
+
+  PALETTE: [
+    '#ff3b30','#ff6b6b','#ff9d4b','#fb8500',
+    '#ffc93c','#ffe066','#b5e853','#6be07a',
+    '#43aa8b','#00c896','#4bc0ff','#00b4d8',
+    '#4895ef','#4361ee','#9b5de5','#c77dff',
+    '#ff6bd6','#f72585','#9aa0a8','#ffffff',
+  ],
+  TABS: [
+    {id:'record',   idx:'01', label:'record'},
+    {id:'goals',    idx:'02', label:'goals'},
+    {id:'calendar', idx:'03', label:'calendar'},
+    {id:'report',   idx:'04', label:'report'},
+  ],
+  MAX_WEEKS_BACK: 8,
+  defaults(){
+    return {
+      profile:{ name:'' },
+      session:{ active:false },
+      settings:{ theme:'dark', navCollapsed:false },   // 'dark' | 'light' / 横画面ナビの折りたたみ
+      subjects:[],
+      materials:[],
+      locations:[],
+      records:[],   // {id,subjectId,materialId,locationId,start,durationSec,note,createdAt}
+      goals:[],     // time:     {id,subjectId,type:'time',targetHours,deadline,createdAt}
+                    // progress: {id,subjectId,type:'progress',targetCount,unit,currentCount,deadline,createdAt}
+                    // ※ type が無い旧データは 'time' 扱い（後方互換）
+    };
+  }
+};
+
+/* ---------------- [STORE] ---------------- */
+/* localStorageが使えない環境（一部プレビュー等）では自動でメモリ保存に退避。
+   これにより描画・操作は常に動作し、ダウンロード版では永続化されます。 */
+const Store = (() => {
+  let usingLS = false;
+  let mem = null;
+  try{
+    const t='__sm_test__'; localStorage.setItem(t,'1'); localStorage.removeItem(t); usingLS=true;
+  }catch(e){ usingLS=false; }
+
+  function readRaw(){
+    if(usingLS){ const s=localStorage.getItem(CONFIG.KEY); return s?JSON.parse(s):null; }
+    return mem;
+  }
+  function writeRaw(data){
+    if(usingLS){ localStorage.setItem(CONFIG.KEY, JSON.stringify(data)); }
+    else { mem = data; }
+  }
+
+  let cache = readRaw();
+  if(!cache){ cache = CONFIG.defaults(); writeRaw(cache); }
+
+  let onCommit = null;   // 変更後フック（クラウド同期の起点。未設定なら何もしない）
+  function commit(){ writeRaw(cache); if(onCommit){ try{ onCommit(); }catch(e){} } }
+
+  return {
+    persistent: usingLS,
+    all(){ return cache; },
+    /* --- collections の汎用CRUD（重複ロジックを排除） --- */
+    list(coll){ return cache[coll] || []; },
+    find(coll,id){ return (cache[coll]||[]).find(x=>x.id===id) || null; },
+    add(coll,obj){ cache[coll]=cache[coll]||[]; cache[coll].push(obj); commit(); return obj; },
+    update(coll,id,patch){
+      const it=this.find(coll,id); if(it){ Object.assign(it,patch); commit(); } return it;
+    },
+    remove(coll,id){ cache[coll]=(cache[coll]||[]).filter(x=>x.id!==id); commit(); },
+    /* --- 単票オブジェクト --- */
+    get(key){ return cache[key]; },
+    set(key,val){ cache[key]=val; commit(); },
+    patch(key,obj){ cache[key]=Object.assign({},cache[key],obj); commit(); },
+    /* --- 全消去 / 書出 --- */
+    reset(){ cache=CONFIG.defaults(); commit(); },
+    export(){ return JSON.parse(JSON.stringify(cache)); },
+    /* --- クラウド同期 連携 --- */
+    setOnCommit(fn){ onCommit=fn; },                       // commit時に呼ぶフックを登録
+    cloudSnapshot(){ const o={}; CONFIG.CLOUD_KEYS.forEach(k=>{ o[k]=cache[k]; }); return o; }, // 同期対象だけ抽出
+    importCloud(data){                                     // クラウド→ローカル反映（pushは発火させない）
+      if(!data || typeof data!=='object') return;
+      CONFIG.CLOUD_KEYS.forEach(k=>{ if(data[k]!==undefined) cache[k]=data[k]; });
+      writeRaw(cache);
+    },
+  };
+})();
+
+/* ---------------- [THEME] ダーク / ライト 切替 ----------------
+ * 配色は CSS の :root / :root.theme-light が持つ。ここは適用と永続化だけ。
+ * 設定は settings.theme に保存。未設定（旧データ）は 'dark' 既定。
+ */
+const Theme = {
+  list: [{k:'dark',label:'ダーク（黒基調）'},{k:'light',label:'ライト（白基調）'}],
+  current(){ const s=Store.get('settings'); return (s&&s.theme)==='light'?'light':'dark'; },
+  apply(name){ document.documentElement.classList.toggle('theme-light', name==='light'); },
+  set(name){ Store.patch('settings',{theme:name}); this.apply(name); }
+};
+
+/* ====================================================================== *
+ *  [AUTH]  メール＋パスワード認証（Firebase Identity Toolkit REST API）
+ *  - SDK/CDN不使用。fetch のみ。Google認証は使わない（GitHub Pages制約のため）。
+ *  - 認証セッションは本体データと別キーで保存（CONFIG.AUTH_KEY）。
+ *  - idToken は約1時間で失効 → validToken() が必要時に refresh。
+ *  ※ ネットワークが遮断されるプレビューでは動作しない。GitHub Pages で確認すること。
+ * ====================================================================== */
+const Auth = {
+  cfg(){ return CONFIG.firebase || {}; },
+  enabled(){ const c=this.cfg(); return !!(c.apiKey && c.databaseURL); },   // 設定があるときだけ有効
+  session(){ try{ return JSON.parse(localStorage.getItem(CONFIG.AUTH_KEY)||'null'); }catch(e){ return null; } },
+  save(s){ try{ localStorage.setItem(CONFIG.AUTH_KEY, JSON.stringify(s)); }catch(e){} },
+  clear(){ try{ localStorage.removeItem(CONFIG.AUTH_KEY); }catch(e){} },
+  loggedIn(){ const s=this.session(); return !!(s && s.refreshToken && s.uid); },
+  email(){ const s=this.session(); return s? s.email : ''; },
+
+  signUp(email,pw){ return this._auth('accounts:signUp', email, pw); },
+  signIn(email,pw){ return this._auth('accounts:signInWithPassword', email, pw); },
+
+  async _auth(method, email, pw){
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/${method}?key=${encodeURIComponent(this.cfg().apiKey)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pw, returnSecureToken: true })
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(this._msg(d));
+    const s = { uid:d.localId, email:d.email||email, idToken:d.idToken, refreshToken:d.refreshToken,
+                expiresAt: Date.now() + (parseInt(d.expiresIn||'3600',10) * 1000) };
+    this.save(s); return s;
+  },
+
+  /* 有効な idToken を返す（失効間近なら refresh） */
+  async validToken(){
+    const s = this.session();
+    if(!s) throw new Error('未ログインです');
+    if(Date.now() < (s.expiresAt - 60000)) return s.idToken;
+    const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(this.cfg().apiKey)}`, {
+      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(s.refreshToken)}`
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(this._msg(d));
+    s.idToken=d.id_token; s.refreshToken=d.refresh_token; s.uid=d.user_id||s.uid;
+    s.expiresAt = Date.now() + (parseInt(d.expires_in||'3600',10) * 1000);
+    this.save(s); return s.idToken;
+  },
+
+  _msg(d){
+    const code=(d && d.error && d.error.message) || 'ERROR';
+    const map={ EMAIL_EXISTS:'このメールアドレスは既に登録されています', EMAIL_NOT_FOUND:'登録されていないメールアドレスです',
+      INVALID_PASSWORD:'パスワードが正しくありません', INVALID_LOGIN_CREDENTIALS:'メールまたはパスワードが正しくありません',
+      WEAK_PASSWORD:'パスワードは6文字以上にしてください', 'WEAK_PASSWORD : Password should be at least 6 characters':'パスワードは6文字以上にしてください',
+      INVALID_EMAIL:'メールアドレスの形式が正しくありません', MISSING_PASSWORD:'パスワードを入力してください',
+      MISSING_EMAIL:'メールアドレスを入力してください', USER_DISABLED:'このアカウントは無効化されています',
+      TOO_MANY_ATTEMPTS_TRY_LATER:'試行回数が多すぎます。しばらく待ってから再度お試しください',
+      TOKEN_EXPIRED:'セッションの有効期限が切れました。再度ログインしてください' };
+    return map[code] || ('認証エラー: ' + code);
+  }
+};
+
+/* ====================================================================== *
+ *  [CLOUD]  ユーザーデータ同期（Firebase Realtime Database REST API）
+ *  - 1ユーザー=1ノード(/users/<uid>) に CLOUD_KEYS をJSONでまるごと保存。
+ *  - ログイン直後: pull（クラウド優先。空ならローカルをpush）。
+ *  - 変更時: 1.5秒デバウンスで push（最終書き込み優先）。
+ * ====================================================================== */
+const Cloud = {
+  status:'idle',   // idle | syncing | synced | offline
+  _timer:null,
+  _url(uid, token){ return `${Auth.cfg().databaseURL.replace(/\/+$/,'')}/users/${uid}.json?auth=${encodeURIComponent(token)}`; },
+
+  async pull(){
+    const s=Auth.session(); const token=await Auth.validToken();
+    const res=await fetch(this._url(s.uid, token));
+    if(!res.ok) throw new Error('クラウド読込失敗 ('+res.status+')');
+    return await res.json();
+  },
+  async push(){
+    const s=Auth.session(); const token=await Auth.validToken();
+    const res=await fetch(this._url(s.uid, token), {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(Store.cloudSnapshot())
+    });
+    if(!res.ok) throw new Error('クラウド書込失敗 ('+res.status+')');
+  },
+
+  /* ログイン時の初期同期: クラウドにデータがあれば取り込み、無ければ現在のローカルを送る */
+  async initialSync(){
+    if(!Auth.enabled() || !Auth.loggedIn()) return;
+    this._set('syncing');
+    try{
+      const data = await this.pull();
+      if(data && typeof data==='object' && Object.keys(data).length){ Store.importCloud(data); }
+      else { await this.push(); }
+      this._set('synced');
+    }catch(e){ this._set('offline'); throw e; }
+  },
+
+  /* 変更時のデバウンス push（Store.setOnCommit から呼ばれる） */
+  scheduleSync(){
+    if(!Auth.enabled() || !Auth.loggedIn()) return;     // ローカル専用時は何もしない
+    this._set('syncing');
+    clearTimeout(this._timer);
+    this._timer = setTimeout(async ()=>{
+      try{ await this.push(); this._set('synced'); }
+      catch(e){ this._set('offline'); }
+    }, 1500);
+  },
+
+  _set(st){ this.status=st; if(typeof App!=='undefined' && App.updateSyncBadge) App.updateSyncBadge(); }
+};
+
+/* 変更フックを登録（ローカル専用時は scheduleSync が即return するので無害） */
+Store.setOnCommit(()=>Cloud.scheduleSync());
+
+/* ---------------- [UTIL] ---------------- */
+const U = {
+  uid(){ return (crypto.randomUUID? crypto.randomUUID() : 'id'+Date.now()+Math.random().toString(16).slice(2)); },
+  pad(n){ return String(n).padStart(2,'0'); },
+  /* 秒 -> "1h 23m" / 0なら "0m" */
+  dur(sec){ sec=Math.round(sec); const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60);
+    if(h&&m) return h+'h '+m+'m'; if(h) return h+'h'; return m+'m'; },
+  /* 秒 -> "HH:MM:SS" */
+  clock(sec){ sec=Math.floor(sec); const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;
+    return U.pad(h)+':'+U.pad(m)+':'+U.pad(s); },
+  hours(sec){ return sec/3600; },
+  ymd(d){ d=new Date(d); return d.getFullYear()+'-'+U.pad(d.getMonth()+1)+'-'+U.pad(d.getDate()); },
+  /* 日付(Date/文字列)同士の同日判定。null や不正値は安全に false を返す（throw しない） */
+  sameDay(a,b){ if(!a||!b) return false; a=new Date(a); b=new Date(b); if(isNaN(a)||isNaN(b)) return false;
+    return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); },
+  /* 月曜始まりの週の開始日 */
+  weekStart(d){ const x=new Date(d); x.setHours(0,0,0,0); const wd=(x.getDay()+6)%7; x.setDate(x.getDate()-wd); return x; },
+  addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; },
+  fmtDate(d){ return (d.getMonth()+1)+'/'+d.getDate(); },
+  /* datetime-local input 用 */
+  localInput(d){ return d.getFullYear()+'-'+U.pad(d.getMonth()+1)+'-'+U.pad(d.getDate())+'T'+U.pad(d.getHours())+':'+U.pad(d.getMinutes()); },
+  daysLeft(deadlineStr){ if(!deadlineStr) return null; const t=new Date(deadlineStr+'T23:59:59'); return Math.ceil((t-new Date())/86400000); },
+  /* 参照解決（削除済みは安全なフォールバック） */
+  subj(id){ return Store.find('subjects',id) || {id,name:'(削除済)',color:'#555'}; },
+  mat(id){ return id? Store.find('materials',id):null; },
+  loc(id){ return id? Store.find('locations',id):null; },
+};
+
+/* ---------------- [STATE] ---------------- */
+const State = {
+  tab:'record',
+  recordMode:'stopwatch',                 // 'stopwatch' | 'manual'
+  sel:{subjectId:null, materialId:null, locationId:null},  // チップ選択（両モード共用）
+  timer:{ running:false, startTs:null, elapsedSec:0 },
+  calMonth:new Date(),
+  calSel:null,                            // 選択中の日付(Date)
+  weekIndex:0,                            // 0=今週, 最大 MAX_WEEKS_BACK
+  reportOpen:false,                       // 「この週の記録」展開
+};
+
+/* ---------------- [DOM helpers] ---------------- */
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+function el(tag, attrs={}, children=[]){
+  const n=document.createElement(tag);
+  for(const k in attrs){
+    if(k==='class') n.className=attrs[k];
+    else if(k==='html') n.innerHTML=attrs[k];
+    else if(k==='text') n.textContent=attrs[k];
+    else if(k.startsWith('on') && typeof attrs[k]==='function') n.addEventListener(k.slice(2),attrs[k]);
+    else if(attrs[k]!=null) n.setAttribute(k,attrs[k]);
+  }
+  (Array.isArray(children)?children:[children]).forEach(c=>{ if(c==null)return; n.append(c.nodeType?c:document.createTextNode(c)); });
+  return n;
+}
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------------- [COMPONENTS] ---------------- */
+const Modal = {
+  open({title, body, footer}){
+    const root=$('#modal-root');
+    root.innerHTML='';
+    const close=()=>Modal.close();
+    const box=el('div',{class:'modal fade'},[
+      el('div',{class:'modal-head'},[ el('h2',{text:title||''}), el('button',{class:'x-btn',text:'✕',onclick:close}) ]),
+      el('div',{class:'modal-body'}, body||[]),
+    ]);
+    if(footer) box.append(el('div',{class:'modal-foot'}, footer));
+    root.append(el('div',{class:'modal-bg',onclick:close}), box);
+    root.classList.add('open');
+    return box;
+  },
+  close(){ const root=$('#modal-root'); root.classList.remove('open'); root.innerHTML=''; }
+};
+
+function confirmDialog(msg, onYes, yesLabel='削除', danger=true){
+  Modal.open({
+    title:'確認',
+    body:[ el('p',{text:msg, style:'color:var(--fg-dim);line-height:1.7;'}) ],
+    footer:[
+      el('button',{class:'btn btn-ghost',text:'キャンセル',onclick:Modal.close}),
+      el('button',{class:'btn '+(danger?'btn-danger':'btn-primary'),text:yesLabel,onclick:()=>{Modal.close();onYes();}}),
+    ]
+  });
+}
+
+/* チップ群を生成（汎用） */
+function chipRow(items, isOn, onPick, render){
+  const row=el('div',{class:'chip-row'});
+  items.forEach(it=>{
+    const c=el('button',{class:'chip'+(isOn(it)?' on':''),onclick:()=>onPick(it)});
+    render(c,it);
+    row.append(c);
+  });
+  return row;
+}
+
+/* ---------------- [VIEWS] ---------------- */
+const Views = {};
+
+/* ---- VIEW: record ---- */
+Views.record = {
+  mount(root){
+    const wrap=el('div',{class:'fade'});
+    wrap.append(viewHead('record','/ track time','記録 — RECORD STUDY TIME'));
+
+    // モード切替
+    const toggle=el('div',{class:'mode-toggle'},[
+      el('button',{class:State.recordMode==='stopwatch'?'on':'',text:'stopwatch',onclick:()=>{State.recordMode='stopwatch';App.renderMain();}}),
+      el('button',{class:State.recordMode==='manual'?'on':'',text:'manual',onclick:()=>{State.recordMode='manual';App.renderMain();}}),
+    ]);
+    wrap.append(toggle);
+
+    wrap.append(State.recordMode==='stopwatch' ? this.stopwatch() : this.manual());
+    wrap.append(this.recent());
+    root.append(wrap);
+  },
+
+  selectors(){
+    const subjects=Store.list('subjects');
+    const sub=el('div',{class:'field'},[ el('label',{text:'科目 SUBJECT'}) ]);
+    sub.append(chipRow(subjects, s=>State.sel.subjectId===s.id, s=>{
+      State.sel.subjectId=s.id; State.sel.materialId=null; App.renderMain();
+    }, (c,s)=>{ c.append(el('i',{class:'swatch',style:`background:${s.color}`}), document.createTextNode(s.name)); }));
+
+    const mats=Store.list('materials').filter(m=>m.subjectId===State.sel.subjectId);
+    const mat=el('div',{class:'field'},[ el('label',{text:'教材 MATERIAL'}) ]);
+    if(!State.sel.subjectId) mat.append(el('div',{class:'sub',style:'color:var(--fg-faint);font-size:12px;',text:'科目を選択してください'}));
+    else if(!mats.length) mat.append(el('div',{class:'sub',style:'color:var(--fg-faint);font-size:12px;',text:'この科目の教材は未登録'}));
+    else mat.append(chipRow(mats, m=>State.sel.materialId===m.id, m=>{ State.sel.materialId=(State.sel.materialId===m.id?null:m.id); App.renderMain(); }, (c,m)=>{ c.textContent=m.name; }));
+
+    const locs=Store.list('locations');
+    const loc=el('div',{class:'field'},[ el('label',{text:'場所 PLACE'}) ]);
+    loc.append(chipRow(locs, l=>State.sel.locationId===l.id, l=>{ State.sel.locationId=(State.sel.locationId===l.id?null:l.id); App.renderMain(); }, (c,l)=>{ c.textContent=(l.emoji?l.emoji+' ':'')+l.name; }));
+
+    return [sub,mat,loc];
+  },
+
+  stopwatch(){
+    const p=el('div',{class:'panel'});
+    p.append(el('div',{class:'sect-title',text:'STOPWATCH'}));
+    const t=State.timer;
+    const shown = t.elapsedSec + (t.running? (Date.now()-t.startTs)/1000 : 0);
+    p.append(el('div',{class:'sw-display',id:'sw-display',text:U.clock(shown)}));
+    p.append(el('div',{class:'sw-state'+(t.running?' live':''),text: t.running?'● RECORDING':(t.elapsedSec>0?'PAUSED':'READY')}));
+
+    this.selectors().forEach(n=>p.append(n));
+
+    const btns=el('div',{class:'row',style:'margin-top:8px;'});
+    if(!t.running){
+      btns.append(el('button',{class:'btn btn-accent btn-lg',text:t.elapsedSec>0?'再開 RESUME':'開始 START',onclick:()=>this.start()}));
+      if(t.elapsedSec>0){
+        btns.append(el('button',{class:'btn btn-primary btn-lg',text:'保存 SAVE',onclick:()=>this.save()}));
+        btns.append(el('button',{class:'btn btn-lg',text:'破棄',onclick:()=>this.discard()}));
+      }
+    }else{
+      btns.append(el('button',{class:'btn btn-lg',text:'停止 STOP',onclick:()=>this.stop()}));
+    }
+    p.append(btns);
+    return p;
+  },
+  start(){ const t=State.timer; t.running=true; t.startTs=Date.now(); App.renderMain(); },
+  stop(){ const t=State.timer; if(t.running){ t.elapsedSec+=(Date.now()-t.startTs)/1000; t.running=false; t.startTs=null; } App.renderMain(); },
+  discard(){ State.timer={running:false,startTs:null,elapsedSec:0}; App.renderMain(); },
+  save(){
+    if(!State.sel.subjectId){ toast('科目を選択してください'); return; }
+    const t=State.timer; const dur=Math.round(t.elapsedSec);
+    if(dur<1){ toast('記録時間がありません'); return; }
+    const start=new Date(Date.now()-dur*1000);
+    Store.add('records',{ id:U.uid(), subjectId:State.sel.subjectId, materialId:State.sel.materialId,
+      locationId:State.sel.locationId, start:start.toISOString(), durationSec:dur, note:'', createdAt:new Date().toISOString() });
+    State.timer={running:false,startTs:null,elapsedSec:0};
+    toast('記録を保存しました'); App.renderMain();
+  },
+
+  manual(){
+    const p=el('div',{class:'panel'});
+    p.append(el('div',{class:'sect-title',text:'MANUAL ENTRY'}));
+    this.selectors().forEach(n=>p.append(n));
+
+    const dt=el('input',{class:'input',type:'datetime-local',value:U.localInput(new Date())});
+    const min=el('input',{class:'input',type:'number',min:'1',placeholder:'分',value:'30'});
+    const note=el('textarea',{class:'textarea',placeholder:'メモ（任意）'});
+
+    p.append(el('div',{class:'field'},[ el('label',{text:'日時 DATE / TIME'}), dt ]));
+    p.append(el('div',{class:'field'},[ el('label',{text:'時間（分）MINUTES'}), min ]));
+    p.append(el('div',{class:'field'},[ el('label',{text:'メモ NOTE'}), note ]));
+    p.append(el('button',{class:'btn btn-primary btn-block btn-lg',text:'保存 SAVE',onclick:()=>{
+      if(!State.sel.subjectId){ toast('科目を選択してください'); return; }
+      const minutes=parseInt(min.value,10);
+      if(!minutes||minutes<1){ toast('時間（分）を入力してください'); return; }
+      if(!dt.value){ toast('日時を入力してください'); return; }
+      Store.add('records',{ id:U.uid(), subjectId:State.sel.subjectId, materialId:State.sel.materialId,
+        locationId:State.sel.locationId, start:new Date(dt.value).toISOString(), durationSec:minutes*60,
+        note:note.value.trim(), createdAt:new Date().toISOString() });
+      toast('記録を保存しました'); App.renderMain();
+    }}));
+    return p;
+  },
+
+  recent(){
+    const p=el('div',{class:'panel'});
+    p.append(el('div',{class:'sect-title',text:'RECENT — 直近の記録'}));
+    const recs=[...Store.list('records')].sort((a,b)=>new Date(b.start)-new Date(a.start)).slice(0,5);
+    if(!recs.length){ p.append(el('div',{class:'empty',text:'まだ記録がありません'})); return p; }
+    recs.forEach(r=>p.append(recItem(r,true)));
+    return p;
+  }
+};
+
+function recItem(r, deletable){
+  const s=U.subj(r.subjectId), m=U.mat(r.materialId), l=U.loc(r.locationId);
+  const sub=[m?m.name:null, l?(l.emoji+' '+l.name):null, U.fmtDate(new Date(r.start))].filter(Boolean).join('  ·  ');
+  const node=el('div',{class:'rec-item'},[
+    el('div',{class:'bar',style:`background:${s.color}`}),
+    el('div',{class:'meta'},[ el('div',{class:'t',text:s.name}), el('div',{class:'s',text:sub}) ]),
+    el('div',{class:'dur',text:U.dur(r.durationSec)}),
+  ]);
+  if(deletable){
+    node.append(el('button',{class:'btn-ghost',style:'padding:6px 8px;',text:'✕',title:'削除',onclick:()=>{
+      confirmDialog('この記録を削除しますか？',()=>{Store.remove('records',r.id);App.renderMain();});
+    }}));
+  }
+  return node;
+}
+
+/* ---- VIEW: goals ----
+ * 目標は2タイプ:
+ *   type:'time'     … 目標時間(h)。達成量は記録の合計時間から自動算出。
+ *   type:'progress' … ページ等の進度。達成量は currentCount を手動で更新。
+ * 旧データ(typeなし)は 'time' として扱う（後方互換）。
+ * 進捗の算出は progressOf() に集約しているので、表示の変更はここだけ直せばよい。
+ */
+Views.goals = {
+  /* 科目の累計学習時間(秒) = 時間タイプの達成量 */
+  studied(subjectId){
+    return Store.list('records').filter(r=>r.subjectId===subjectId).reduce((a,r)=>a+r.durationSec,0);
+  },
+  /* 目標 → 表示用の進捗データ（時間/進度 両対応） */
+  progressOf(g){
+    const type=g.type||'time';
+    if(type==='progress'){
+      const unit=g.unit||'';
+      const done=Number(g.currentCount)||0, target=Number(g.targetCount)||0;
+      const pct=target>0?Math.min(100,Math.round(done/target*100)):0;
+      return { type, pct, doneText:`${done}${unit}`, targetText:`${target}${unit}`,
+               remainText:`残り ${Math.max(0,target-done)}${unit}` };
+    }
+    const doneSec=this.studied(g.subjectId), targetSec=(Number(g.targetHours)||0)*3600;
+    const pct=targetSec>0?Math.min(100,Math.round(doneSec/targetSec*100)):0;
+    return { type, pct, doneText:U.dur(doneSec), targetText:`${Number(g.targetHours)||0}h`,
+             remainText:`残り ${U.dur(Math.max(0,targetSec-doneSec))}` };
+  },
+  mount(root){
+    const wrap=el('div',{class:'fade'});
+    wrap.append(viewHead('goals','/ targets','目標 — SET & TRACK GOALS'));
+    const goals=Store.list('goals');
+    if(!goals.length){ wrap.append(el('div',{class:'panel'},[el('div',{class:'empty',text:'目標がありません。右下の + から追加してください'})])); }
+    goals.forEach(g=>{
+      const s=U.subj(g.subjectId);
+      const p=this.progressOf(g);
+      const dl=U.daysLeft(g.deadline);
+      const card=el('div',{class:'goal-card'});
+      card.append(el('button',{class:'btn-ghost gc-edit',text:'編集',onclick:()=>this.form(g)}));
+      card.append(el('div',{class:'gc-top'},[
+        el('div',{class:'gc-name'},[
+          el('i',{class:'swatch',style:`width:11px;height:11px;border-radius:50%;background:${s.color}`}),
+          document.createTextNode(s.name),
+          el('span',{class:'gc-type',text: p.type==='progress'?'進度':'時間'}),
+        ]),
+      ]));
+      card.append(el('div',{style:'display:flex;align-items:flex-end;gap:6px;margin-bottom:12px;'},[
+        el('div',{class:'gc-pct',text:p.pct+'%'}),
+      ]));
+      const bar=el('div',{class:'progress'}); bar.append(el('i',{style:`width:${p.pct}%`})); card.append(bar);
+      card.append(el('div',{class:'gc-meta'},[
+        el('span',{text:`${p.doneText} / ${p.targetText}`}),
+        el('span',{text:p.remainText}),
+        el('span',{text: g.deadline? (dl>=0?`締切まで ${dl}日`:`期限超過 ${-dl}日`) : '締切なし'}),
+      ]));
+      /* 進度タイプは「現在の進捗」をすばやく更新するボタンを表示 */
+      if((g.type||'time')==='progress'){
+        card.append(el('button',{class:'btn btn-ghost',text:'＋ 進捗を更新',style:'margin-top:12px;width:100%;',onclick:()=>this.updateProgress(g)}));
+      }
+      wrap.append(card);
+    });
+    root.append(wrap);
+  },
+  /* 進度タイプ: 現在値だけを更新する軽量ダイアログ */
+  updateProgress(goal){
+    const unit=goal.unit||'';
+    const cur=el('input',{class:'input',type:'number',min:'0',value:Number(goal.currentCount)||0});
+    Modal.open({
+      title:'進捗を更新',
+      body:[
+        el('p',{text:`${U.subj(goal.subjectId).name} ／ 目標 ${Number(goal.targetCount)||0}${unit}`,style:'color:var(--fg-dim);margin-bottom:10px;'}),
+        el('div',{class:'field'},[el('label',{text:`現在の進捗 CURRENT（${unit}）`}),cur]),
+      ],
+      footer:[
+        el('button',{class:'btn btn-ghost',text:'キャンセル',onclick:Modal.close}),
+        el('button',{class:'btn btn-primary',text:'保存',onclick:()=>{
+          const v=parseFloat(cur.value);
+          if(isNaN(v)||v<0){toast('0以上の数値を入力してください');return;}
+          Store.update('goals',goal.id,{currentCount:v});
+          Modal.close(); App.renderMain();
+        }}),
+      ]
+    });
+  },
+  form(goal){
+    const editing=!!goal;
+    const subjects=Store.list('subjects');
+    let pickSubj = goal? goal.subjectId : (subjects[0]&&subjects[0].id);
+    let pickType = goal? (goal.type||'time') : 'time';
+
+    // 科目選択
+    const subjWrap=el('div',{class:'field'},[el('label',{text:'科目 SUBJECT'})]);
+    const renderSubj=()=>{ const old=subjWrap.querySelector('.chip-row'); if(old)old.remove();
+      subjWrap.append(chipRow(subjects,s=>pickSubj===s.id,s=>{pickSubj=s.id;renderSubj();},(c,s)=>{c.append(el('i',{class:'swatch',style:`background:${s.color}`}),document.createTextNode(s.name));})); };
+    renderSubj();
+
+    // タイプ別入力（要素は使い回し、切替時も入力値を保持）
+    const hours  =el('input',{class:'input',type:'number',min:'0.5',step:'0.5',value:(goal&&goal.targetHours)||'20'});
+    const count  =el('input',{class:'input',type:'number',min:'1',value:(goal&&goal.targetCount)||'50'});
+    const unit   =el('input',{class:'input',type:'text',maxlength:'8',value:(goal&&goal.unit)||'ページ'});
+    const current=el('input',{class:'input',type:'number',min:'0',value:(goal&&goal.currentCount)||'0'});
+    const fields=el('div');
+    const renderFields=()=>{ fields.innerHTML='';
+      if(pickType==='progress'){
+        fields.append(
+          el('div',{class:'field'},[el('label',{text:'目標量 TARGET'}),count]),
+          el('div',{class:'field'},[el('label',{text:'単位 UNIT（ページ等）'}),unit]),
+          el('div',{class:'field'},[el('label',{text:'現在の進捗 CURRENT'}),current]),
+        );
+      }else{
+        fields.append( el('div',{class:'field'},[el('label',{text:'目標時間（h）TARGET HOURS'}),hours]) );
+      }
+    };
+
+    // タイプ選択（時間 / 進度）
+    const typeWrap=el('div',{class:'field'},[el('label',{text:'目標タイプ GOAL TYPE'})]);
+    const types=[{k:'time',label:'時間'},{k:'progress',label:'進度（ページ等）'}];
+    const renderType=()=>{ const old=typeWrap.querySelector('.chip-row'); if(old)old.remove();
+      typeWrap.append(chipRow(types,t=>pickType===t.k,t=>{pickType=t.k;renderType();renderFields();},(c,t)=>{c.append(document.createTextNode(t.label));})); };
+
+    renderType(); renderFields();
+    const dl=el('input',{class:'input',type:'date',value:goal?goal.deadline||'':''});
+
+    Modal.open({
+      title: editing?'目標を編集':'目標を追加',
+      body:[ subjWrap, typeWrap, fields,
+        el('div',{class:'field'},[el('label',{text:'締切日 DEADLINE（任意）'}),dl]),
+      ],
+      footer:[
+        editing? el('button',{class:'btn btn-danger',text:'削除',onclick:()=>{confirmDialog('この目標を削除しますか？',()=>{Store.remove('goals',goal.id);Modal.close();App.renderMain();});}}) : null,
+        el('button',{class:'btn btn-ghost',text:'キャンセル',onclick:Modal.close}),
+        el('button',{class:'btn btn-primary',text:'保存',onclick:()=>{
+          if(!pickSubj){toast('科目を選択してください');return;}
+          let patch;
+          if(pickType==='progress'){
+            const c=parseFloat(count.value), u=unit.value.trim()||'ページ', cur=parseFloat(current.value);
+            if(!c||c<=0){toast('目標量を入力してください');return;}
+            patch={subjectId:pickSubj,type:'progress',targetCount:c,unit:u,currentCount:(isNaN(cur)||cur<0)?0:cur,deadline:dl.value||null};
+          }else{
+            const h=parseFloat(hours.value);
+            if(!h||h<=0){toast('目標時間を入力してください');return;}
+            patch={subjectId:pickSubj,type:'time',targetHours:h,deadline:dl.value||null};
+          }
+          if(editing) Store.update('goals',goal.id,patch);
+          else Store.add('goals',Object.assign({id:U.uid(),createdAt:new Date().toISOString()},patch));
+          Modal.close(); App.renderMain();
+        }}),
+      ].filter(Boolean)
+    });
+  }
+};
+
+/* ---- VIEW: calendar ---- */
+Views.calendar = {
+  recordsByDay(date){
+    return Store.list('records').filter(r=>U.sameDay(new Date(r.start),date))
+      .sort((a,b)=>new Date(a.start)-new Date(b.start));
+  },
+  mount(root){
+    const wrap=el('div',{class:'fade'});
+    wrap.append(viewHead('calendar','/ history','カレンダー — STUDY HISTORY'));
+
+    const m=State.calMonth;
+    const head=el('div',{class:'cal-head'},[
+      el('div',{class:'m',text:`${m.getFullYear()} . ${U.pad(m.getMonth()+1)}`}),
+      el('div',{class:'cal-nav'},[
+        el('button',{class:'btn btn-ghost',text:'‹',onclick:()=>{State.calMonth=new Date(m.getFullYear(),m.getMonth()-1,1);State.calSel=null;App.renderMain();}}),
+        el('button',{class:'btn btn-ghost',text:'今月',onclick:()=>{State.calMonth=new Date();State.calSel=null;App.renderMain();}}),
+        el('button',{class:'btn btn-ghost',text:'›',onclick:()=>{State.calMonth=new Date(m.getFullYear(),m.getMonth()+1,1);State.calSel=null;App.renderMain();}}),
+      ])
+    ]);
+
+    const panel=el('div',{class:'panel'});
+    panel.append(head);
+    const grid=el('div',{class:'cal-grid'});
+    ['月','火','水','木','金','土','日'].forEach(d=>grid.append(el('div',{class:'cal-dow',text:d})));
+
+    const first=new Date(m.getFullYear(),m.getMonth(),1);
+    const lead=(first.getDay()+6)%7;
+    const daysInMonth=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
+    for(let i=0;i<lead;i++) grid.append(el('div',{class:'cal-cell empty'}));
+    const today=new Date();
+    for(let d=1;d<=daysInMonth;d++){
+      const date=new Date(m.getFullYear(),m.getMonth(),d);
+      const recs=this.recordsByDay(date);
+      const subjIds=[...new Set(recs.map(r=>r.subjectId))].slice(0,4);
+      const cls=['cal-cell']; if(recs.length)cls.push('has'); if(U.sameDay(date,today))cls.push('today');
+      if(State.calSel&&U.sameDay(date,State.calSel))cls.push('sel');
+      const cell=el('div',{class:cls.join(' '),onclick:()=>{State.calSel=U.sameDay(date,State.calSel)?null:date;App.renderMain();}});
+      cell.append(el('div',{class:'d',text:d}));
+      const dots=el('div',{class:'dots'});
+      subjIds.forEach(id=>dots.append(el('i',{style:`background:${U.subj(id).color}`})));
+      cell.append(dots);
+      grid.append(cell);
+    }
+    panel.append(grid);
+    wrap.append(panel);
+
+    if(State.calSel){
+      const recs=this.recordsByDay(State.calSel);
+      const dp=el('div',{class:'panel day-detail fade'});
+      dp.append(el('div',{class:'sect-title',text:`${U.fmtDate(State.calSel)} の記録 — ${U.dur(recs.reduce((a,r)=>a+r.durationSec,0))}`}));
+      if(!recs.length) dp.append(el('div',{class:'empty',text:'この日は記録がありません'}));
+      else recs.forEach(r=>dp.append(recItem(r,false)));
+      wrap.append(dp);
+    }
+    root.append(wrap);
+  }
+};
+
+/* ---- VIEW: report ---- */
+Views.report = {
+  weekTotal(start){
+    const end=U.addDays(start,7);
+    return Store.list('records').filter(r=>{const t=new Date(r.start);return t>=start&&t<end;});
+  },
+  mount(root){
+    const wrap=el('div',{class:'fade'});
+    wrap.append(viewHead('report','/ weekly','週次レポート — WEEKLY REVIEW'));
+
+    const base=U.weekStart(new Date());
+    const start=U.addDays(base,-7*State.weekIndex);
+    const end=U.addDays(start,6);
+    const recs=this.weekTotal(start);
+    const prevRecs=this.weekTotal(U.addDays(start,-7));
+    const total=recs.reduce((a,r)=>a+r.durationSec,0);
+    const prevTotal=prevRecs.reduce((a,r)=>a+r.durationSec,0);
+    const diff=total-prevTotal;
+
+    // 週ナビ
+    wrap.append(el('div',{class:'wk-nav'},[
+      el('button',{class:'btn btn-ghost',text:'‹ 前の週',disabled:State.weekIndex>=CONFIG.MAX_WEEKS_BACK?'':null,onclick:()=>{if(State.weekIndex<CONFIG.MAX_WEEKS_BACK){State.weekIndex++;App.renderMain();}}}),
+      el('div',{class:'rng',text:`${U.fmtDate(start)} – ${U.fmtDate(end)}${State.weekIndex===0?' (今週)':''}`}),
+      el('button',{class:'btn btn-ghost',text:'次の週 ›',disabled:State.weekIndex<=0?'':null,onclick:()=>{if(State.weekIndex>0){State.weekIndex--;App.renderMain();}}}),
+    ]));
+
+    // KPI
+    wrap.append(el('div',{class:'kpi-row'},[
+      kpi('この週の合計', U.dur(total)),
+      kpi('前の週の合計', U.dur(prevTotal)),
+      kpi('前週比', (diff>=0?'+':'−')+U.dur(Math.abs(diff)), diff>0?'pos':(diff<0?'neg':'')),
+    ]));
+
+    // 曜日別バー
+    const dayTotals=[0,0,0,0,0,0,0];
+    recs.forEach(r=>{ const idx=(new Date(r.start).getDay()+6)%7; dayTotals[idx]+=r.durationSec; });
+    const max=Math.max(1,...dayTotals);
+    const bars=el('div',{class:'bars'});
+    ['月','火','水','木','金','土','日'].forEach((lab,i)=>{
+      const h=Math.round(dayTotals[i]/max*100);
+      const b=el('div',{class:'b'+(dayTotals[i]===max&&max>1?' peak':'')});
+      const col=el('div',{class:'col',style:'height:100%;'}); col.append(el('i',{style:`height:${h}%`}));
+      b.append(col, el('div',{class:'lab',text:lab}));
+      bars.append(b);
+    });
+    const bp=el('div',{class:'panel'}); bp.append(el('div',{class:'sect-title',text:'DAILY — 曜日別'}), bars); wrap.append(bp);
+
+    // 科目別
+    const bySubj={};
+    recs.forEach(r=>{ bySubj[r.subjectId]=(bySubj[r.subjectId]||0)+r.durationSec; });
+    const sp=el('div',{class:'panel'}); sp.append(el('div',{class:'sect-title',text:'BY SUBJECT — 科目別'}));
+    const entries=Object.entries(bySubj).sort((a,b)=>b[1]-a[1]);
+    if(!entries.length) sp.append(el('div',{class:'empty',text:'この週は記録がありません'}));
+    entries.forEach(([id,sec])=>{
+      const s=U.subj(id); const ratio=total>0?Math.round(sec/total*100):0;
+      sp.append(el('div',{class:'subj-row'},[
+        el('div',{class:'nm'},[ el('i',{class:'swatch',style:`width:9px;height:9px;border-radius:50%;background:${s.color}`}), document.createTextNode(s.name) ]),
+        (()=>{const t=el('div',{class:'track'});t.append(el('i',{style:`width:${ratio}%;background:${s.color}`}));return t;})(),
+        el('div',{class:'val',text:U.dur(sec)}),
+      ]));
+    });
+    wrap.append(sp);
+
+    // この週の記録（展開）
+    const lp=el('div',{class:'panel'});
+    lp.append(el('button',{class:'btn btn-block',text:(State.reportOpen?'▲ 閉じる':'▼ この週の記録')+` (${recs.length})`,onclick:()=>{State.reportOpen=!State.reportOpen;App.renderMain();}}));
+    if(State.reportOpen){
+      const list=el('div',{style:'margin-top:14px;'});
+      if(!recs.length) list.append(el('div',{class:'empty',text:'記録なし'}));
+      else [...recs].sort((a,b)=>new Date(b.start)-new Date(a.start)).forEach(r=>list.append(recItem(r,false)));
+      lp.append(list);
+    }
+    wrap.append(lp);
+    root.append(wrap);
+  }
+};
+
+function kpi(k,v,mod){ return el('div',{class:'kpi'},[ el('div',{class:'k',text:k}), el('div',{class:'v'+(mod?' '+mod:''),text:v}) ]); }
+
+/* ---------------- [MANAGE] ユーザーメニュー ---------------- */
+const Manage = {
+  open(){
+    const prof=Store.get('profile');
+    const cloudOn = Auth.enabled() && Auth.loggedIn();
+    const subText = cloudOn ? (Auth.email()+' · CLOUD') : (Store.persistent?'LOCAL STORAGE':'MEMORY (一時)');
+    Modal.open({
+      title:'menu',
+      body:[
+        el('div',{style:'display:flex;align-items:center;gap:12px;margin-bottom:16px;'},[
+          el('div',{class:'avatar',style:'width:44px;height:44px;font-size:18px;',text:(prof.name||'?').slice(0,1).toUpperCase()}),
+          el('div',{},[ el('div',{text:prof.name||'(未設定)',style:'font-size:15px;'}), el('div',{class:'mono-up',text:subText}) ]),
+        ]),
+        (()=>{const list=el('div',{class:'menu-list'});
+          const items=[
+            ['科目を管理',()=>this.subjects()],
+            ['教材を管理',()=>this.materials()],
+            ['場所を管理',()=>this.locations()],
+            ['テーマ（ダーク / ライト）',()=>this.theme()],
+            ['プロフィール編集',()=>this.profile()],
+            ['データを書き出し (JSON)',()=>this.exportData()],
+          ];
+          // アカウント（クラウド同期）— 設定がある時だけ出す
+          if(Auth.enabled()){
+            if(cloudOn) items.push(['クラウドからログアウト',()=>this.cloudLogout()]);
+            else        items.push(['ログインして他端末と同期',()=>this.account()]);
+          } else {
+            items.push(['ログアウト',()=>this.logout()]);
+          }
+          items.push(['アカウントをリセット',()=>this.reset()]);
+          items.forEach(([t,fn])=>list.append(el('button',{onclick:fn},[ el('span',{text:t}), el('span',{class:'arr',text:'›'}) ])));
+          return list;
+        })()
+      ]
+    });
+  },
+
+  /* ログイン画面へ */
+  account(){ Modal.close(); App.renderAuth(); },
+  /* クラウドからログアウト（端末のローカルデータは残す） */
+  cloudLogout(){
+    confirmDialog('クラウドからログアウトしますか？\n（この端末のデータは残ります）',()=>{
+      Auth.clear(); Store.patch('session',{active:false}); Modal.close(); App.boot();
+    },'ログアウト',false);
+  },
+
+  /* --- テーマ切替（ダーク / ライト） --- */
+  theme(){
+    const render=()=>{
+      const cur=Theme.current();
+      const list=el('div',{class:'menu-list'});
+      Theme.list.forEach(t=>list.append(el('button',{onclick:()=>{ Theme.set(t.k); render(); }},[
+        el('span',{text:t.label}),
+        el('span',{class:'arr',style:cur===t.k?'color:var(--accent);':'',text: cur===t.k?'✓':''}),
+      ])));
+      Modal.open({
+        title:'テーマ',
+        body:[
+          el('p',{text:'アプリ全体の配色を切り替えます。選ぶとすぐ反映され、設定は保存されます。',style:'color:var(--fg-dim);font-size:13px;line-height:1.7;margin-bottom:12px;'}),
+          list,
+          el('button',{class:'btn btn-ghost',style:'margin-top:14px;',text:'‹ メニューに戻る',onclick:()=>this.open()}),
+        ]
+      });
+    };
+    render();
+  },
+
+  /* --- 科目 --- */
+  subjects(){
+    const body=el('div',{});
+    const reload=()=>{ body.innerHTML=''; 
+      Store.list('subjects').forEach(s=>{
+        body.append(el('div',{class:'list-item'},[
+          el('i',{class:'swatch',style:`width:14px;height:14px;border-radius:50%;background:${s.color}`}),
+          el('div',{class:'grow',text:s.name}),
+          el('button',{class:'btn-ghost',text:'編集',onclick:()=>this.subjectForm(s,reload)}),
+          el('button',{class:'btn-ghost',text:'✕',onclick:()=>confirmDialog(`「${s.name}」を削除しますか？\n（紐づく教材も削除されます。既存の記録は残ります）`,()=>{
+            Store.list('materials').filter(m=>m.subjectId===s.id).forEach(m=>Store.remove('materials',m.id));
+            Store.remove('subjects',s.id); reload(); App.renderMain();
+          })}),
+        ]));
+      });
+      body.append(el('button',{class:'btn btn-block',style:'margin-top:14px;',text:'+ 科目を追加',onclick:()=>this.subjectForm(null,reload)}));
+    };
+    reload();
+    Modal.open({title:'科目を管理',body:[body]});
+  },
+  subjectForm(s,after){
+    const editing=!!s; let color=s?s.color:CONFIG.PALETTE[0];
+    const name=el('input',{class:'input',value:s?s.name:'',placeholder:'例: 英語'});
+    const pick=el('div',{class:'swatch-pick'});
+    const renderPick=()=>{ pick.innerHTML=''; CONFIG.PALETTE.forEach(c=>pick.append(el('button',{class:color===c?'on':'',style:`background:${c}`,onclick:()=>{color=c;renderPick();}}))); };
+    renderPick();
+    Modal.open({title:editing?'科目を編集':'科目を追加',
+      body:[ el('div',{class:'field'},[el('label',{text:'名前 NAME'}),name]), el('div',{class:'field'},[el('label',{text:'カラー COLOR'}),pick]) ],
+      footer:[
+        el('button',{class:'btn btn-ghost',text:'戻る',onclick:()=>this.subjects()}),
+        el('button',{class:'btn btn-primary',text:'保存',onclick:()=>{
+          if(!name.value.trim()){toast('名前を入力してください');return;}
+          if(editing) Store.update('subjects',s.id,{name:name.value.trim(),color});
+          else Store.add('subjects',{id:U.uid(),name:name.value.trim(),color});
+          App.renderMain(); this.subjects();
+        }})
+      ]});
+  },
+
+  /* --- 教材（科目に紐付け） --- */
+  materials(){
+    const body=el('div',{});
+    const reload=()=>{ body.innerHTML='';
+      const subjects=Store.list('subjects');
+      if(!subjects.length){ body.append(el('div',{class:'empty',text:'先に科目を登録してください'})); return; }
+      subjects.forEach(s=>{
+        body.append(el('div',{class:'sect-title',style:'margin-top:16px;',text:s.name}));
+        const mats=Store.list('materials').filter(m=>m.subjectId===s.id);
+        if(!mats.length) body.append(el('div',{class:'sub',style:'color:var(--fg-faint);font-size:12px;padding:4px 0;',text:'なし'}));
+        mats.forEach(m=>body.append(el('div',{class:'list-item'},[
+          el('div',{class:'grow',text:m.name}),
+          el('button',{class:'btn-ghost',text:'編集',onclick:()=>this.materialForm(m,s.id,reload)}),
+          el('button',{class:'btn-ghost',text:'✕',onclick:()=>{Store.remove('materials',m.id);reload();}}),
+        ])));
+        body.append(el('button',{class:'btn-ghost',style:'margin-top:6px;',text:'+ 教材を追加',onclick:()=>this.materialForm(null,s.id,reload)}));
+      });
+    };
+    reload();
+    Modal.open({title:'教材を管理',body:[body]});
+  },
+  materialForm(m,subjectId,after){
+    const editing=!!m;
+    const name=el('input',{class:'input',value:m?m.name:'',placeholder:'例: 単語帳'});
+    Modal.open({title:editing?'教材を編集':'教材を追加',
+      body:[ el('div',{class:'field'},[el('label',{text:`科目: ${U.subj(subjectId).name}`}),name]) ],
+      footer:[
+        el('button',{class:'btn btn-ghost',text:'戻る',onclick:()=>this.materials()}),
+        el('button',{class:'btn btn-primary',text:'保存',onclick:()=>{
+          if(!name.value.trim()){toast('名前を入力してください');return;}
+          if(editing) Store.update('materials',m.id,{name:name.value.trim()});
+          else Store.add('materials',{id:U.uid(),subjectId,name:name.value.trim()});
+          App.renderMain(); this.materials();
+        }})
+      ]});
+  },
+
+  /* --- 場所（絵文字） --- */
+  locations(){
+    const body=el('div',{});
+    const reload=()=>{ body.innerHTML='';
+      Store.list('locations').forEach(l=>body.append(el('div',{class:'list-item'},[
+        el('div',{style:'font-size:20px;width:28px;text-align:center;',text:l.emoji||'📍'}),
+        el('div',{class:'grow',text:l.name}),
+        el('button',{class:'btn-ghost',text:'編集',onclick:()=>this.locationForm(l,reload)}),
+        el('button',{class:'btn-ghost',text:'✕',onclick:()=>{Store.remove('locations',l.id);reload();App.renderMain();}}),
+      ])));
+      body.append(el('button',{class:'btn btn-block',style:'margin-top:14px;',text:'+ 場所を追加',onclick:()=>this.locationForm(null,reload)}));
+    };
+    reload();
+    Modal.open({title:'場所を管理',body:[body]});
+  },
+  locationForm(l){
+    const editing=!!l;
+    const emoji=el('input',{class:'input',value:l?l.emoji:'',placeholder:'🏠',maxlength:'4',style:'text-align:center;'});
+    const name=el('input',{class:'input',value:l?l.name:'',placeholder:'例: 自宅'});
+    Modal.open({title:editing?'場所を編集':'場所を追加',
+      body:[ el('div',{class:'row'},[
+        el('div',{class:'field',style:'flex:0 0 90px;'},[el('label',{text:'絵文字'}),emoji]),
+        el('div',{class:'field'},[el('label',{text:'名前 NAME'}),name]),
+      ]) ],
+      footer:[
+        el('button',{class:'btn btn-ghost',text:'戻る',onclick:()=>this.locations()}),
+        el('button',{class:'btn btn-primary',text:'保存',onclick:()=>{
+          if(!name.value.trim()){toast('名前を入力してください');return;}
+          if(editing) Store.update('locations',l.id,{name:name.value.trim(),emoji:emoji.value.trim()});
+          else Store.add('locations',{id:U.uid(),name:name.value.trim(),emoji:emoji.value.trim()});
+          App.renderMain(); this.locations();
+        }})
+      ]});
+  },
+
+  profile(){
+    const prof=Store.get('profile');
+    const name=el('input',{class:'input',value:prof.name||'',placeholder:'ユーザー名'});
+    Modal.open({title:'プロフィール編集',
+      body:[ el('div',{class:'field'},[el('label',{text:'ユーザー名 USERNAME'}),name]) ],
+      footer:[ el('button',{class:'btn btn-ghost',text:'戻る',onclick:()=>this.open()}),
+        el('button',{class:'btn btn-primary',text:'保存',onclick:()=>{Store.patch('profile',{name:name.value.trim()});Modal.close();App.renderShell();App.renderMain();}}) ]});
+  },
+
+  exportData(){
+    const data=Store.export(); data.exportedAt=new Date().toISOString();
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=el('a',{href:url,download:`studymanager_${U.ymd(new Date())}.json`}); document.body.append(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast('JSONを書き出しました');
+  },
+
+  logout(){
+    confirmDialog('ログアウトしますか？（データは保持されます）',()=>{
+      Store.patch('session',{active:false}); Modal.close(); App.boot();
+    },'ログアウト',false);
+  },
+
+  reset(){
+    confirmDialog('全ての記録・目標・設定・アカウントを削除します。\nこの操作は取り消せません。',()=>{
+      if(Auth.enabled() && Auth.loggedIn()){ Auth.clear(); }  // クラウドへ空データを上書きしないよう先にログアウト
+      Store.reset(); Modal.close();
+      State.timer={running:false,startTs:null,elapsedSec:0}; State.sel={subjectId:null,materialId:null,locationId:null};
+      App.boot();
+    });
+  }
+};
+
+/* ---------------- shared view head ---------------- */
+function viewHead(title,tag,sub){
+  const h=el('div',{});
+  h.append(el('div',{class:'view-head'},[ el('h1',{text:title}), el('span',{class:'tag',text:tag}) ]));
+  if(sub) h.append(el('div',{class:'view-sub',text:sub}));
+  return h;
+}
+
+/* ---------------- toast ---------------- */
+let toastT;
+function toast(msg){
+  let t=$('#toast');
+  if(!t){ t=el('div',{id:'toast',style:'position:fixed;left:50%;bottom:120px;transform:translateX(-50%);background:var(--fg);color:var(--on-fg);padding:12px 20px;z-index:200;font-size:12px;letter-spacing:0.08em;'}); document.body.append(t); }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(toastT); toastT=setTimeout(()=>{t.style.opacity='0';},1800);
+}
+
+/* ---------------- [APP] shell / routing / init ---------------- */
+const App = {
+  boot(){
+    Theme.apply(Theme.current());   // 起動時に保存テーマを適用
+    // クラウドアカウントでログイン済みなら、同期してから起動（失敗時はローカルで続行）
+    if(Auth.enabled() && Auth.loggedIn()){
+      this.renderSyncing();
+      Cloud.initialSync()
+        .then(()=>this._afterLogin())
+        .catch(()=>{ toast('オフライン: ローカルのデータで起動します'); this._afterLogin(); });
+      return;
+    }
+    const prof=Store.get('profile'); const sess=Store.get('session');
+    if(!sess.active || !prof.name){ this.renderSetup(); }
+    else { this.enterApp(); }
+  },
+
+  /* ログイン後の共通処理 */
+  _afterLogin(){
+    if(!(Store.get('profile')||{}).name){ Store.patch('profile',{name:(Auth.email()||'user').split('@')[0]}); }
+    Store.patch('session',{active:true});
+    this.enterApp();
+  },
+  enterApp(){ this.renderShell(); this.renderMain(); },
+
+  renderSyncing(){
+    const app=$('#app'); app.innerHTML='';
+    app.append(el('div',{class:'setup fade'},[
+      el('div',{class:'glyph-lg'}),
+      el('div',{class:'big',text:'studymanager'}),
+      el('p',{text:'同期中… SYNCING'}),
+    ]));
+  },
+
+  /* ローカル専用なら名前入力、クラウド有効ならログイン画面 */
+  renderSetup(){ if(Auth.enabled()) this.renderAuth(); else this.renderLocalSetup(); },
+
+  /* メール＋パスワードのログイン / 新規登録（クラウド有効時のみ表示） */
+  renderAuth(){
+    const app=$('#app'); app.innerHTML='';
+    const email=el('input',{class:'input',type:'email',placeholder:'メールアドレス',autocomplete:'email'});
+    const pw=el('input',{class:'input',type:'password',placeholder:'パスワード（6文字以上）',autocomplete:'current-password'});
+    const msg=el('div',{class:'auth-msg'});
+    function setBusy(b){ btnLogin.disabled=b; btnSignup.disabled=b; }
+    async function submit(mode){
+      const e=(email.value||'').trim(), p=(pw.value||'');
+      if(!e){ msg.textContent='メールアドレスを入力してください'; return; }
+      if(!p || p.length<6){ msg.textContent='パスワードは6文字以上で入力してください'; return; }
+      setBusy(true); msg.textContent='通信中…';
+      try{
+        if(mode==='signup') await Auth.signUp(e,p); else await Auth.signIn(e,p);
+        msg.textContent='同期中…';
+        await Cloud.initialSync().catch(()=>{});   // 同期失敗してもログインは成立、ローカルで続行
+        App._afterLogin();
+      }catch(err){ msg.textContent=err.message||'エラーが発生しました'; setBusy(false); }
+    }
+    const btnLogin=el('button',{class:'btn btn-accent btn-block btn-lg',text:'ログイン',onclick:()=>submit('login')});
+    const btnSignup=el('button',{class:'btn btn-block',style:'margin-top:10px;',text:'新規登録',onclick:()=>submit('signup')});
+    pw.addEventListener('keydown',e=>{ if(e.key==='Enter') submit('login'); });
+    app.append(el('div',{class:'setup fade'},[
+      el('div',{class:'glyph-lg'}),
+      el('div',{class:'big',text:'studymanager'}),
+      el('p',{text:'login to sync across devices'}),
+      el('div',{class:'form'},[
+        el('div',{class:'field'},[ el('label',{text:'メール EMAIL'}), email ]),
+        el('div',{class:'field'},[ el('label',{text:'パスワード PASSWORD'}), pw ]),
+        msg, btnLogin, btnSignup,
+        el('button',{class:'link-btn',text:'アカウントを使わず、この端末だけで使う →',onclick:()=>App.renderLocalSetup()}),
+      ]),
+    ]));
+  },
+
+  /* 端末ローカルのみ（名前だけ） */
+  renderLocalSetup(){
+    const app=$('#app');
+    const name=el('input',{class:'input',placeholder:'ユーザー名を入力',value:Store.get('profile').name||''});
+    const go=()=>{ if(!name.value.trim()){toast('名前を入力してください');return;}
+      Store.patch('profile',{name:name.value.trim()}); Store.patch('session',{active:true}); App.enterApp(); };
+    name.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+    app.innerHTML='';
+    app.append(el('div',{class:'setup fade'},[
+      el('div',{class:'glyph-lg'}),
+      el('div',{class:'big',text:'studymanager'}),
+      el('p',{text:'plan · track · review'}),
+      el('div',{class:'form'},[
+        el('div',{class:'field'},[ el('label',{text:'ようこそ — WHO ARE YOU?'}), name ]),
+        el('button',{class:'btn btn-accent btn-block btn-lg',text:'はじめる START',onclick:go}),
+        (Auth.enabled()? el('button',{class:'link-btn',text:'← アカウントでログイン（他端末と同期）',onclick:()=>App.renderAuth()}) : null),
+      ]),
+      el('div',{class:'mono-up',style:'margin-top:24px;',text: Store.persistent?'data: local storage':'data: memory only'}),
+    ]));
+  },
+
+  renderShell(){
+    const app=$('#app');
+    app.innerHTML='';
+    const prof=Store.get('profile');
+    const avatarTxt=(prof.name||'?').slice(0,1).toUpperCase();
+
+    const collapsed=!!(Store.get('settings')||{}).navCollapsed;
+    const sidenav=el('div',{class:'sidenav'});
+    const navToggle=el('button',{id:'navToggle',class:'nav-toggle',title:collapsed?'ナビを展開':'ナビを折りたたむ',onclick:()=>this.toggleNav()},[ el('span',{class:'ico',text:collapsed?'»':'«'}) ]);
+    sidenav.append(el('div',{class:'sidenav-head'},[
+      el('div',{class:'brand'},[ el('div',{class:'glyph'}), el('div',{class:'name',text:'STUDYMGR'}) ]),
+      navToggle,
+    ]));
+    CONFIG.TABS.forEach(t=>sidenav.append(this.navBtn(t)));
+
+    const topbar=el('div',{class:'topbar'},[
+      el('div',{class:'brand'},[ el('div',{class:'glyph'}), el('div',{class:'name',text:'STUDYMGR'}) ]),
+      el('span',{class:'sync-badge'}),
+      el('button',{class:'avatar',text:avatarTxt,onclick:()=>Manage.open()}),
+    ]);
+    const pctop=el('div',{class:'pc-topbar'},[ el('span',{class:'sync-badge'}), el('button',{class:'avatar',text:avatarTxt,onclick:()=>Manage.open()}) ]);
+
+    const main=el('main',{class:'main',id:'main'});
+    const contentCol=el('div',{class:'content-col'},[ pctop, main ]);
+
+    const bottom=el('nav',{class:'bottomnav'});
+    CONFIG.TABS.forEach(t=>bottom.append(this.navBtn(t)));
+
+    app.append(el('div',{class:'app-shell'+(collapsed?' nav-collapsed':'')},[ sidenav, contentCol ]), topbar, bottom);
+    // topbar はモバイル時のみ表示。app-shell の前に置くため append 順を調整
+    app.prepend(topbar);
+    this.updateNav();
+    this.updateSyncBadge();
+  },
+
+  /* 同期状態のバッジ表示（ログイン時のみ） */
+  updateSyncBadge(){
+    const show = Auth.enabled() && Auth.loggedIn();
+    const map={ syncing:['同期中…',''], synced:['● 同期済','ok'], offline:['● オフライン','warn'], idle:['',''] };
+    $$('.sync-badge').forEach(b=>{
+      if(!show){ b.textContent=''; b.className='sync-badge'; return; }
+      const m=map[Cloud.status]||['',''];
+      b.textContent=m[0]; b.className='sync-badge'+(m[1]?(' '+m[1]):'');
+    });
+  },
+
+  navBtn(t){
+    return el('button',{class:'nav-item'+(State.tab===t.id?' active':''),'data-tab':t.id,onclick:()=>this.go(t.id)},[
+      el('span',{class:'idx',text:t.idx}), el('span',{class:'lbl',text:t.label}),
+    ]);
+  },
+
+  updateNav(){ $$('.nav-item').forEach(b=>b.classList.toggle('active', b.getAttribute('data-tab')===State.tab)); },
+
+  /* 横画面のサイドナビを折りたたむ / 展開する（状態は保存） */
+  toggleNav(){
+    const collapsed = !((Store.get('settings')||{}).navCollapsed);
+    Store.patch('settings',{navCollapsed:collapsed});
+    const shell=$('.app-shell'); if(shell) shell.classList.toggle('nav-collapsed', collapsed);
+    const btn=$('#navToggle');
+    if(btn){ btn.title=collapsed?'ナビを展開':'ナビを折りたたむ'; const ico=btn.querySelector('.ico'); if(ico) ico.textContent=collapsed?'»':'«'; }
+  },
+
+  go(tab){ State.tab=tab; this.updateNav(); this.renderMain(); window.scrollTo(0,0); },
+
+  renderMain(){
+    const m=$('#main'); if(!m) return;
+    m.innerHTML='';
+    Views[State.tab].mount(m);
+    // FAB（goalsタブのみ）
+    const oldFab=$('#fab'); if(oldFab)oldFab.remove();
+    if(State.tab==='goals'){
+      document.body.append(el('button',{id:'fab',class:'fab',text:'+',title:'目標を追加',onclick:()=>Views.goals.form(null)}));
+    }
+  },
+};
+
+/* タイマー更新（1秒毎・runningのときのみDOM更新） */
+setInterval(()=>{
+  const t=State.timer; if(!t.running) return;
+  const d=$('#sw-display'); if(d){ d.textContent=U.clock(t.elapsedSec+(Date.now()-t.startTs)/1000); }
+},1000);
+
+/* 起動 */
+App.boot();
+</script>
+</body>
+</html>
