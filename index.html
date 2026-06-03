@@ -1315,7 +1315,7 @@ const Manage = {
     },'ログアウト',false);
   },
 
-  reset(){
+  
     confirmDialog('全ての記録・目標・設定・アカウントを削除します。\nこの操作は取り消せません。',()=>{
       if(Auth.enabled() && Auth.loggedIn()){ Auth.clear(); }  // クラウドへ空データを上書きしないよう先にログアウト
       Store.reset(); Modal.close();
@@ -1323,7 +1323,19 @@ const Manage = {
       App.boot();
     });
   }
-};
+};reset(){
+    confirmDialog('全ての記録・目標・設定・アカウントを削除します。\nこの操作は取り消せません。',async ()=>{
+      if(Auth.enabled() && Auth.loggedIn()){
+        try{
+          const token = await Auth.validToken();
+          await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${encodeURIComponent(Auth.cfg().apiKey)}`,{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({idToken:token})
+          });
+        }catch(e){}
+        Auth.clear();
+      }
+      Store.reset(); Modal.close();
 
 /* ---------------- shared view head ---------------- */
 function viewHead(title,tag,sub){
