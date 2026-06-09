@@ -48,6 +48,7 @@
   --bar-bg:    rgba(255,255,255,0.90);
   --dot:       rgba(0,0,0,0.08);
 }
+/* ─── BASE: リセット・ボディ・グローバルユーティリティ ─── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;}
 body{
@@ -67,6 +68,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 ::selection{background:var(--accent);color:#000;}
 .dot-label{font-family:var(--f-disp);text-transform:lowercase;letter-spacing:0.12em;}
 .mono-up{font-family:var(--f-mono);text-transform:uppercase;letter-spacing:0.18em;font-size:11px;color:var(--fg-dim);}
+/* ─── LAYOUT: アプリシェル・トップバー・サイドナビ ─── */
 #app{min-height:100vh;}
 .app-shell{display:flex;min-height:100vh;}
 .topbar{
@@ -103,10 +105,12 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
   .app-shell.nav-collapsed .nav-item .idx{width:auto;text-align:center;}
   .content-col{flex:1;min-width:0;}
   .topbar{display:none;}
-  .pc-topbar{display:flex !important;}
+  /* ─── PC TOPBAR: PCレイアウト専用バー ─── */
+.pc-topbar{display:flex !important;}
   .bottomnav{display:none !important;}
 }
 .pc-topbar{display:none;align-items:center;justify-content:flex-end;padding:14px 24px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bar-bg);backdrop-filter:blur(8px);z-index:20;}
+/* ─── NAVIGATION: ナビボタン・ボトムナビ ─── */
 .nav-toggle{width:30px;height:30px;border:1px solid var(--line);background:var(--bg-2);color:var(--fg-dim);display:grid;place-items:center;cursor:pointer;font-family:var(--f-mono);font-size:15px;line-height:1;flex:0 0 auto;}
 .nav-toggle:hover{color:var(--fg);border-color:var(--fg);}
 .nav-item{
@@ -127,16 +131,18 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 .bottomnav .nav-item{flex-direction:column;gap:3px;align-items:center;padding:10px 4px;}
 .bottomnav .nav-item .idx{display:none;}
 .bottomnav .nav-item.active::before{left:50%;transform:translateX(-50%);top:0;bottom:auto;width:24px;height:3px;}
+/* ─── MAIN CONTENT: メインエリア・ビューヘッド ─── */
 .main{padding:24px 18px 110px;max-width:920px;margin:0 auto;width:100%;}
 @media(min-width:768px){.main{padding:30px 34px 60px;}}
 .view-head{display:flex;align-items:baseline;gap:12px;margin-bottom:24px;}
-.view-head h1{font-family:var(--f-disp);font-weight:600;font-size:30px;letter-spacing:0.06em;text-transform:lowercase;}
-.view-head .tag{font-family:var(--f-disp);font-size:13px;color:var(--accent);}
+.view-head h1{font-family:var(--f-disp);font-weight:600;font-size:30px;letter-spacing:0.06em;text-transform:lowercase;color:var(--fg-dim);}
+.view-head .tag{font-family:var(--f-disp);font-size:13px;color:var(--fg-dim);}
 .view-sub{color:var(--fg-dim);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;margin-top:-16px;margin-bottom:24px;}
 .panel{background:var(--bg-1);border:1px solid var(--line);padding:20px;}
 .panel + .panel{margin-top:16px;}
 .sect-title{font-family:var(--f-mono);text-transform:uppercase;letter-spacing:0.2em;font-size:11px;color:var(--fg-dim);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
 .sect-title::before{content:"";width:6px;height:6px;background:var(--accent);display:inline-block;}
+/* ─── BUTTONS: ボタン全種 ─── */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   border:1px solid var(--line);background:transparent;color:var(--fg);
@@ -156,6 +162,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 .btn:disabled{opacity:.35;cursor:not-allowed;}
 .btn-block{width:100%;}
 .btn-lg{padding:18px;font-size:13px;}
+/* ─── CHIPS: 選択チップ ─── */
 .chip{
   display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);
   background:transparent;color:var(--fg-dim);padding:8px 14px;cursor:pointer;
@@ -165,6 +172,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 .chip.on{border-color:var(--fg);color:var(--fg);background:var(--bg-2);}
 .chip .swatch{width:9px;height:9px;border-radius:50%;}
 .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+/* ─── FORMS: フォーム・入力・行レイアウト ─── */
 .field{margin-bottom:16px;}
 .field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.16em;color:var(--fg-dim);margin-bottom:7px;}
 .input,.textarea,.select{
@@ -177,6 +185,7 @@ input[type="datetime-local"]{-webkit-appearance:none;appearance:none;width:100%;
 .row{display:flex;gap:12px;}
 .row > *{flex:1;min-width:0;}
 .empty{color:var(--fg-faint);text-align:center;padding:40px 10px;font-size:13px;letter-spacing:0.1em;}
+/* ─── MODAL: モーダル・確認ダイアログ ─── */
 .modal-root{position:fixed;inset:0;z-index:100;display:none;}
 .modal-root.open{display:block;}
 .modal-bg{position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(3px);}
@@ -191,6 +200,7 @@ input[type="datetime-local"]{-webkit-appearance:none;appearance:none;width:100%;
 .modal-foot{padding:16px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;}
 .x-btn{background:none;border:1px solid var(--line);color:var(--fg-dim);width:30px;height:30px;cursor:pointer;}
 .x-btn:hover{color:var(--fg);border-color:var(--fg);}
+/* ─── FAB: フローティングボタン類 ─── */
 .fab{
   position:fixed;right:20px;bottom:90px;width:56px;height:56px;border-radius:50%;
   background:var(--accent);color:#000;border:none;cursor:pointer;font-size:26px;
@@ -198,7 +208,8 @@ input[type="datetime-local"]{-webkit-appearance:none;appearance:none;width:100%;
 }
 @media(min-width:768px){.fab{bottom:34px;right:34px;}}
 .fab:active{transform:scale(.94);}
-.sw-display{font-family:var(--f-disp);font-size:64px;font-weight:500;letter-spacing:0.04em;text-align:center;padding:14px 0 6px;line-height:1;}
+/* ─── RECORD VIEW: ストップウォッチ・記録リスト ─── */
+.sw-display{font-family:var(--f-disp);font-size:64px;font-weight:500;letter-spacing:0.04em;text-align:center;padding:14px 0 6px;line-height:1;color:var(--fg-dim);}
 @media(min-width:768px){.sw-display{font-size:84px;}}
 .sw-state{text-align:center;color:var(--fg-dim);font-size:11px;letter-spacing:0.25em;text-transform:uppercase;margin-bottom:18px;}
 .sw-state.live{color:var(--accent);}
@@ -211,16 +222,18 @@ input[type="datetime-local"]{-webkit-appearance:none;appearance:none;width:100%;
 .rec-item .meta{flex:1;min-width:0;}
 .rec-item .meta .t{font-size:13px;}
 .rec-item .meta .s{font-size:11px;color:var(--fg-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.rec-item .dur{font-family:var(--f-disp);font-size:16px;}
+.rec-item .dur{font-family:var(--f-disp);font-size:16px;color:var(--fg-dim);}
+/* ─── GOALS VIEW: 目標カード・進捗バー ─── */
 .goal-card{border:1px solid var(--line);padding:18px;margin-bottom:14px;position:relative;}
 .goal-card .gc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
-.goal-card .gc-name{display:flex;align-items:center;gap:9px;font-size:15px;}
-.goal-card .gc-pct{font-family:var(--f-disp);font-size:30px;line-height:1;}
+.goal-card .gc-name{display:flex;align-items:center;gap:9px;font-size:15px;color:var(--fg-dim);}
+.goal-card .gc-pct{font-family:var(--f-mono);font-size:30px;line-height:1;color:var(--fg-dim);font-weight:600;}
 .progress{height:6px;background:var(--bg-2);border:1px solid var(--line-soft);overflow:hidden;}
 .progress > i{display:block;height:100%;background:var(--accent);transition:width .5s ease;}
 .goal-card .gc-meta{display:flex;justify-content:space-between;margin-top:12px;font-size:11px;color:var(--fg-dim);letter-spacing:0.05em;}
 .goal-card .gc-edit{position:absolute;top:12px;right:12px;}
 .goal-card .gc-type{font-size:10px;letter-spacing:0.1em;color:var(--fg-dim);border:1px solid var(--line);border-radius:999px;padding:2px 9px;}
+/* ─── CALENDAR VIEW: カレンダーグリッド ─── */
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .cal-head .m{font-family:var(--f-disp);font-size:22px;letter-spacing:0.06em;}
 .cal-nav{display:flex;gap:8px;}
@@ -235,26 +248,50 @@ input[type="datetime-local"]{-webkit-appearance:none;appearance:none;width:100%;
 .cal-cell .dots{display:flex;gap:3px;flex-wrap:wrap;justify-content:center;max-width:80%;}
 .cal-cell .dots i{width:5px;height:5px;border-radius:50%;}
 .day-detail{margin-top:18px;}
-.kpi-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;}
-@media(max-width:520px){.kpi-row{grid-template-columns:1fr;}}
+/* ─── REPORT VIEW: KPIカード ─── */
+.kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+@media(min-width:520px){.kpi-row{grid-template-columns:repeat(4,1fr);}}
 .kpi{border:1px solid var(--line);padding:16px;}
-.kpi .k{font-size:10px;text-transform:uppercase;letter-spacing:0.16em;color:var(--fg-dim);margin-bottom:8px;}
-.kpi .v{font-family:var(--f-disp);font-size:26px;line-height:1;}
+.kpi .k{font-size:11px;text-transform:uppercase;letter-spacing:0.16em;color:var(--fg-dim);font-weight:500;margin-bottom:10px;}
+.kpi .v{font-family:var(--f-disp);font-size:24px;line-height:1;color:var(--fg-dim);font-weight:400;}
 .kpi .v.pos{color:var(--accent);}
-.kpi .v.neg{color:var(--fg-dim);}
+.kpi .v.neg{color:var(--fg-faint);}
 .wk-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .wk-nav .rng{font-family:var(--f-disp);font-size:15px;letter-spacing:0.04em;}
-.bars{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:8px;}
+/* ─── REPORT CHART: 曜日別バーグラフ（案1〜4実装済み） ─── */
+.bars{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:8px;position:relative;}
 .bars .b{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;}
-.bars .b .col{width:100%;background:var(--bg-2);border:1px solid var(--line);position:relative;min-height:2px;transition:height .4s ease;}
-.bars .b .col > i{position:absolute;bottom:0;left:0;right:0;background:var(--fg);}
-.bars .b.peak .col > i{background:var(--accent);}
+.bars .b .col{width:100%;background:var(--bg-2);border:1px solid var(--line);position:relative;min-height:2px;transition:height .4s ease;overflow:hidden;}
+.bars .b .col > i{position:absolute;bottom:0;left:0;right:0;}
+.bars .b.peak .col{border-color:var(--accent);}
+.bars .b.sel .col{border-color:var(--fg);border-width:2px;}
+.bars .b.sel .lab{color:var(--fg);}
 .bars .b .lab{font-size:10px;color:var(--fg-dim);}
+/* 案2: 科目別セグメント */
+.bars .b .col .seg{position:absolute;left:0;right:0;}
+/* 案1: 縦書き時間ラベル */
+.bar-overlay{position:absolute;bottom:0;left:0;right:0;background:transparent;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;pointer-events:none;}
+.bar-time{writing-mode:vertical-rl;text-orientation:upright;font-family:var(--f-mono);font-size:9px;letter-spacing:0.08em;white-space:nowrap;}
+:root.theme-light .bar-time{color:rgba(0,0,0,0.5);}
+/* 案3: 先週比較マーカー */
+.bar-prev{position:absolute;left:0;right:0;height:0;border-top:2px dashed var(--fg-faint);pointer-events:none;z-index:3;}
+/* 案4: 週平均ライン */
+.avg-line{position:absolute;left:0;right:0;border-top:1px dashed var(--fg-dim);pointer-events:none;z-index:4;}
+.avg-label{position:absolute;right:2px;top:-13px;font-family:var(--f-mono);font-size:8px;color:var(--fg-faint);letter-spacing:0.08em;}
+/* チュートリアル */
+/* ─── TUTORIAL: 初回チュートリアルモーダル ─── */
+.t-step{display:flex;align-items:flex-start;gap:14px;padding:16px 0;border-bottom:1px solid var(--line);}
+.t-step:last-of-type{border-bottom:none;}
+.t-num{font-family:var(--f-mono);font-size:20px;font-weight:700;color:var(--accent);min-width:28px;line-height:1;}
+.t-icon{font-size:22px;min-width:28px;line-height:1.2;}
+.t-title{font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:0.02em;}
+.t-desc{font-size:12px;color:var(--fg-dim);line-height:1.75;white-space:pre-line;}
 .subj-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:12px;}
 .subj-row .nm{width:84px;flex:0 0 84px;display:flex;align-items:center;gap:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .subj-row .track{flex:1;height:8px;background:var(--bg-2);border:1px solid var(--line-soft);}
 .subj-row .track > i{display:block;height:100%;}
 .subj-row .val{font-family:var(--f-disp);width:64px;text-align:right;flex:0 0 64px;}
+/* ─── MANAGE / MENU: メニューリスト・設定項目 ─── */
 .menu-list{display:flex;flex-direction:column;}
 .menu-list button{display:flex;align-items:center;justify-content:space-between;background:none;border:none;border-bottom:1px solid var(--line-soft);color:var(--fg);padding:15px 4px;cursor:pointer;text-align:left;}
 .menu-list button:hover{color:var(--accent);}
@@ -265,6 +302,7 @@ input[type="datetime-local"]{-webkit-appearance:none;appearance:none;width:100%;
 .swatch-pick{display:flex;gap:8px;flex-wrap:wrap;}
 .swatch-pick button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;}
 .swatch-pick button.on{border-color:var(--fg);}
+/* ─── SETUP / AUTH: セットアップ・ログイン画面 ─── */
 .setup{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;}
 .setup .big{font-family:var(--f-disp);font-size:46px;letter-spacing:0.1em;margin-bottom:8px;}
 .setup .glyph-lg{width:18px;height:18px;border-radius:50%;background:var(--accent);box-shadow:0 0 24px var(--accent);margin-bottom:26px;}
@@ -277,8 +315,19 @@ input[type="datetime-local"]{-webkit-appearance:none;appearance:none;width:100%;
 .sync-badge.ok{color:#6be07a;}
 .sync-badge.warn{color:var(--accent);}
 .topbar .sync-badge{margin-left:auto;}
+/* ─── ANIMATIONS ─── */
 .fade{animation:fade .35s ease;}
 @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+/* ─── FULLSCREEN BUTTON: 左下の全画面切替ボタン ─── */
+.fs-btn{
+  position:fixed;left:20px;bottom:90px;width:44px;height:44px;border-radius:50%;
+  background:var(--bg-2);border:1px solid var(--line);color:var(--fg-dim);
+  cursor:pointer;display:grid;place-items:center;z-index:40;
+  font-size:15px;font-family:sans-serif;
+  transition:border-color .15s,color .15s;
+}
+.fs-btn:hover{border-color:var(--fg-dim);color:var(--fg);}
+@media(min-width:768px){.fs-btn{bottom:34px;}}
 </style>
 </head>
 <body>
@@ -287,9 +336,37 @@ input[type="datetime-local"]{-webkit-appearance:none;appearance:none;width:100%;
 <script>
 "use strict";
 
+/* ============================================================
+ *  studymanager — アーキテクチャ概要
+ * ============================================================
+ *  データフロー: UI操作 → Store.add/patch → commit()
+ *               → writeRaw(localStorage) → onCommit()
+ *               → Cloud.scheduleSync() → Firebase PUT
+ *
+ *  モジュール構成（定義順）:
+ *    CONFIG   定数・Firebase設定・カラーパレット
+ *    STORE    データCRUD + クラウド同期フック
+ *    THEME    ダーク/ライト切替
+ *    AUTH     Firebase Identity Toolkit REST（メール認証のみ）
+ *    CLOUD    Firebase Realtime DB REST（pull/push/sync）
+ *    UTIL     日付・時刻・IDなどユーティリティ関数
+ *    STATE    タブ・選択状態などUIの一時状態
+ *    DOM      el() / $ / $$ ヘルパー
+ *    VIEWS    record / goals / calendar / report の各タブ
+ *    MANAGE   メニュー・設定モーダル
+ *    APP      起動・画面遷移・チュートリアル
+ *
+ *  カスタマイズしたい場合:
+ *    科目色パレット → CONFIG.PALETTE
+ *    Firebase設定  → CONFIG.firebase
+ *    タブ構成      → CONFIG.TABS
+ *    チュートリアル → App.showTutorial()
+ * ============================================================ */
+
 /* ---------------- [CONFIG] ---------------- */
 const CONFIG = {
   KEY: 'studymanager.v1',
+  /* ↓↓ Firebase設定 — ここに自分のプロジェクトの値を入れる ↓↓ */
   firebase: {
     apiKey:      'AIzaSyC-Iqs8Kwx9SYGEYsx_dpZdi5k7ao-xNG4',
     databaseURL: 'https://study-manage-528dd-default-rtdb.asia-southeast1.firebasedatabase.app',
@@ -504,6 +581,7 @@ const State = {
   calSel:null,
   weekIndex:0,
   reportOpen:false,
+  reportDay:null,   // 曜日別グラフでタップされた曜日インデックス（null=週全体）
 };
 
 /* ---------------- [DOM helpers] ---------------- */
@@ -633,18 +711,24 @@ Views.record = {
     p.append(el('div',{class:'sect-title',text:'MANUAL ENTRY'}));
     this.selectors().forEach(n=>p.append(n));
     const dt=el('input',{class:'input',type:'datetime-local',value:U.localInput(new Date())});
-    const min=el('input',{class:'input',type:'number',min:'1',placeholder:'分',value:'30'});
+    const hrs=el('input',{class:'input',type:'number',min:'0',max:'23',placeholder:'0',value:'0'});
+    const min=el('input',{class:'input',type:'number',min:'0',max:'59',placeholder:'0',value:'30'});
     const note=el('textarea',{class:'textarea',placeholder:'メモ（任意）'});
     p.append(el('div',{class:'field'},[ el('label',{text:'日時 DATE / TIME'}), dt ]));
-    p.append(el('div',{class:'field'},[ el('label',{text:'時間（分）MINUTES'}), min ]));
+    p.append(el('div',{class:'row'},[
+      el('div',{class:'field'},[ el('label',{text:'時間 HOURS'}), hrs ]),
+      el('div',{class:'field'},[ el('label',{text:'分 MINUTES'}), min ]),
+    ]));
     p.append(el('div',{class:'field'},[ el('label',{text:'メモ NOTE'}), note ]));
     p.append(el('button',{class:'btn btn-primary btn-block btn-lg',text:'保存 SAVE',onclick:()=>{
       if(!State.sel.subjectId){ toast('科目を選択してください'); return; }
-      const minutes=parseInt(min.value,10);
-      if(!minutes||minutes<1){ toast('時間（分）を入力してください'); return; }
+      const h=parseInt(hrs.value,10)||0;
+      const m=parseInt(min.value,10)||0;
+      if(h<0||m<0||m>59){ toast('時間・分の値が正しくありません'); return; }
+      if(h===0&&m===0){ toast('時間または分を入力してください'); return; }
       if(!dt.value){ toast('日時を入力してください'); return; }
       Store.add('records',{ id:U.uid(), subjectId:State.sel.subjectId, materialId:State.sel.materialId,
-        locationId:State.sel.locationId, start:new Date(dt.value).toISOString(), durationSec:minutes*60,
+        locationId:State.sel.locationId, start:new Date(dt.value).toISOString(), durationSec:h*3600+m*60,
         note:note.value.trim(), createdAt:new Date().toISOString() });
       toast('記録を保存しました'); App.renderMain();
     }}));
@@ -878,34 +962,88 @@ Views.report = {
     const prevTotal=prevRecs.reduce((a,r)=>a+r.durationSec,0);
     const diff=total-prevTotal;
     wrap.append(el('div',{class:'wk-nav'},[
-      el('button',{class:'btn btn-ghost',text:'‹ 前の週',disabled:State.weekIndex>=CONFIG.MAX_WEEKS_BACK?'':null,onclick:()=>{if(State.weekIndex<CONFIG.MAX_WEEKS_BACK){State.weekIndex++;App.renderMain();}}}),
+      el('button',{class:'btn btn-ghost',text:'‹ 前の週',disabled:State.weekIndex>=CONFIG.MAX_WEEKS_BACK?'':null,onclick:()=>{if(State.weekIndex<CONFIG.MAX_WEEKS_BACK){State.weekIndex++;State.reportDay=null;App.renderMain();}}}),
       el('div',{class:'rng',text:`${U.fmtDate(start)} – ${U.fmtDate(end)}${State.weekIndex===0?' (今週)':''}`}),
-      el('button',{class:'btn btn-ghost',text:'次の週 ›',disabled:State.weekIndex<=0?'':null,onclick:()=>{if(State.weekIndex>0){State.weekIndex--;App.renderMain();}}}),
+      el('button',{class:'btn btn-ghost',text:'次の週 ›',disabled:State.weekIndex<=0?'':null,onclick:()=>{if(State.weekIndex>0){State.weekIndex--;State.reportDay=null;App.renderMain();}}}),
     ]));
+    const avgSec=total/7;
     wrap.append(el('div',{class:'kpi-row'},[
       kpi('この週の合計', U.dur(total)),
       kpi('前の週の合計', U.dur(prevTotal)),
       kpi('前週比', (diff>=0?'+':'−')+U.dur(Math.abs(diff)), diff>0?'pos':(diff<0?'neg':'')),
+      kpi('1日平均', U.dur(avgSec)),
     ]));
-    const dayTotals=[0,0,0,0,0,0,0];
-    recs.forEach(r=>{ const idx=(new Date(r.start).getDay()+6)%7; dayTotals[idx]+=r.durationSec; });
-    const max=Math.max(1,...dayTotals);
+    // 曜日別バー（改良版: 案1〜4）
+    // 案2: 科目別内訳を計算
+    const dayBreakdown=Array.from({length:7},()=>[]);
+    recs.forEach(r=>{
+      const idx=(new Date(r.start).getDay()+6)%7;
+      const ex=dayBreakdown[idx].find(x=>x.subjectId===r.subjectId);
+      if(ex) ex.secs+=r.durationSec;
+      else dayBreakdown[idx].push({subjectId:r.subjectId,secs:r.durationSec});
+    });
+    const dayTotals=dayBreakdown.map(d=>d.reduce((a,x)=>a+x.secs,0));
+    // 案3: 先週の日別合計
+    const prevDayTotals=[0,0,0,0,0,0,0];
+    prevRecs.forEach(r=>{ const idx=(new Date(r.start).getDay()+6)%7; prevDayTotals[idx]+=r.durationSec; });
+    // スケール（今週・先週の最大値で統一）
+    const maxSec=Math.max(1,...dayTotals,...prevDayTotals);
+    const peakDay=dayTotals.indexOf(Math.max(...dayTotals));
     const bars=el('div',{class:'bars'});
+    const dayNames=['月','火','水','木','金','土','日'];
     ['月','火','水','木','金','土','日'].forEach((lab,i)=>{
-      const h=Math.round(dayTotals[i]/max*100);
-      const b=el('div',{class:'b'+(dayTotals[i]===max&&max>1?' peak':'')});
-      const col=el('div',{class:'col',style:'height:100%;'}); col.append(el('i',{style:`height:${h}%`}));
-      b.append(col, el('div',{class:'lab',text:lab}));
+      const h=Math.round(dayTotals[i]/maxSec*100);
+      const isSel=State.reportDay===i;
+      const b=el('div',{class:'b'+(i===peakDay&&dayTotals[i]>0?' peak':'')+(isSel?' sel':''),
+        style:'cursor:pointer;',onclick:()=>{ State.reportDay=(State.reportDay===i?null:i); App.renderMain(); }});
+      const col=el('div',{class:'col',style:'height:100%;'});
+      // 案2: 科目別カラーセグメントを下から積み上げ
+      const segs=[...dayBreakdown[i]].sort((a,bb)=>a.secs-bb.secs);
+      let cumPct=0;
+      segs.forEach(seg=>{
+        const segPct=Math.round(seg.secs/maxSec*100);
+        const subj=U.subj(seg.subjectId);
+        col.append(el('i',{class:'seg',style:`height:${segPct}%;bottom:${cumPct}%;background:${subj.color};`}));
+        cumPct+=segPct;
+      });
+      // 案1: バー内に縦書きで合計時間（15%以上のみ・色は背景に合わせて自動）
+      if(h>=15&&dayTotals[i]>0){
+        const topSeg=segs.length?segs[segs.length-1]:null;
+        const topColor=topSeg?U.subj(topSeg.subjectId).color:'';
+        const bright=topColor?isLightColor(topColor):false;
+        const txtColor=bright?'rgba(0,0,0,0.75)':'rgba(255,255,255,0.85)';
+        const ov=el('i',{class:'bar-overlay',style:`height:${h}%`});
+        ov.append(el('span',{class:'bar-time',style:`color:${txtColor}`,text:U.dur(dayTotals[i])}));
+        col.append(ov);
+      }
+      // 案3: 先週比較の点線マーカー
+      const prevH=Math.round(prevDayTotals[i]/maxSec*100);
+      if(prevDayTotals[i]>0){
+        col.append(el('span',{class:'bar-prev',style:`bottom:${prevH}%`}));
+      }
+      b.append(col,el('div',{class:'lab',text:lab}));
       bars.append(b);
     });
+    // 案4: 週平均ライン（.bars横断、avgSecは上部で定義済み）
+    if(avgSec>0){
+      const avgBot=Math.round(22+(avgSec/maxSec)*128);
+      const al=el('div',{class:'avg-line',style:`bottom:${avgBot}px`});
+      al.append(el('span',{class:'avg-label',text:'avg'}));
+      bars.append(al);
+    }
     const bp=el('div',{class:'panel'}); bp.append(el('div',{class:'sect-title',text:'DAILY — 曜日別'}), bars); wrap.append(bp);
+    // BY SUBJECT: 曜日タップ時はその日の記録だけ表示
+    const selDay=State.reportDay;
+    const subjRecs=selDay!==null ? recs.filter(r=>(new Date(r.start).getDay()+6)%7===selDay) : recs;
+    const subjTotal=subjRecs.reduce((a,r)=>a+r.durationSec,0);
     const bySubj={};
-    recs.forEach(r=>{ bySubj[r.subjectId]=(bySubj[r.subjectId]||0)+r.durationSec; });
-    const sp=el('div',{class:'panel'}); sp.append(el('div',{class:'sect-title',text:'BY SUBJECT — 科目別'}));
+    subjRecs.forEach(r=>{ bySubj[r.subjectId]=(bySubj[r.subjectId]||0)+r.durationSec; });
+    const subjTitle='BY SUBJECT — 科目別'+(selDay!==null?` (${dayNames[selDay]})  ${U.dur(subjTotal)}`:'');
+    const sp=el('div',{class:'panel'}); sp.append(el('div',{class:'sect-title',text:subjTitle}));
     const entries=Object.entries(bySubj).sort((a,b)=>b[1]-a[1]);
-    if(!entries.length) sp.append(el('div',{class:'empty',text:'この週は記録がありません'}));
+    if(!entries.length) sp.append(el('div',{class:'empty',text:selDay!==null?'この日は記録がありません':'この週は記録がありません'}));
     entries.forEach(([id,sec])=>{
-      const s=U.subj(id); const ratio=total>0?Math.round(sec/total*100):0;
+      const s=U.subj(id); const ratio=subjTotal>0?Math.round(sec/subjTotal*100):0;
       sp.append(el('div',{class:'subj-row'},[
         el('div',{class:'nm'},[ el('i',{class:'swatch',style:`width:9px;height:9px;border-radius:50%;background:${s.color}`}), document.createTextNode(s.name) ]),
         (()=>{const t=el('div',{class:'track'});t.append(el('i',{style:`width:${ratio}%;background:${s.color}`}));return t;})(),
@@ -927,6 +1065,13 @@ Views.report = {
 };
 
 function kpi(k,v,mod){ return el('div',{class:'kpi'},[ el('div',{class:'k',text:k}), el('div',{class:'v'+(mod?' '+mod:''),text:v}) ]); }
+
+/* 背景色が明るいかどうかを判定（バー内テキストの色選択に使用） */
+function isLightColor(hex){
+  const c=hex.replace('#',''); if(c.length!==6) return false;
+  const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);
+  return (r*299+g*587+b*114)/1000 > 160;
+}
 
 /* ---------------- [MANAGE] ---------------- */
 const Manage = {
@@ -1170,7 +1315,43 @@ const App = {
     Store.patch('session',{active:true});
     this.enterApp();
   },
-  enterApp(){ this.renderShell(); this.renderMain(); },
+  enterApp(){
+    this.renderShell(); this.renderMain();
+    if(!Store.get('settings').tutorialDone) this.showTutorial();
+  },
+
+  showTutorial(){
+    const steps=[
+      { num:'01', icon:'📚', title:'科目を追加する',
+        desc:'右上のアバターボタン → メニュー →「科目を管理」\nアプリで使う科目（英語・数学など）を登録してください。\n科目がないと記録ができません。' },
+      { num:'02', icon:'⏱', title:'学習を記録する',
+        desc:'record タブ → STOPWATCH（計測しながら記録）\nまたは MANUAL（後から時間を入力）\n科目・時間・場所を選んで「保存」します。' },
+      { num:'03', icon:'🎯', title:'目標を設定する',
+        desc:'goals タブ → 右下の「＋」ボタン\n科目ごとに目標時間を設定すると、\n進捗バーで達成度を確認できます。' },
+    ];
+    Modal.open({
+      title:'HOW TO START — 始め方',
+      body:[
+        el('p',{style:'font-size:12px;color:var(--fg-dim);line-height:1.7;margin-bottom:20px;',
+          text:'まず右上のメニューから科目を追加してください。科目を作るとすべての機能が使えるようになります。'}),
+        ...steps.map(s=>el('div',{class:'t-step'},[
+          el('div',{class:'t-num',text:s.num}),
+          el('div',{class:'t-icon',text:s.icon}),
+          el('div',{},[
+            el('div',{class:'t-title',text:s.title}),
+            el('div',{class:'t-desc',text:s.desc}),
+          ]),
+        ])),
+        el('button',{class:'btn btn-primary btn-block btn-lg',style:'margin-top:24px;',
+          text:'はじめる GET STARTED',onclick:()=>{
+            Store.patch('settings',{tutorialDone:true});
+            Modal.close();
+          }}),
+        el('div',{class:'mono-up',style:'text-align:center;margin-top:14px;color:var(--fg-faint);',
+          text:'メニューはいつでも右上のアバターから開けます'}),
+      ]
+    });
+  },
   renderSyncing(){
     const app=$('#app'); app.innerHTML='';
     app.append(el('div',{class:'setup fade'},[
@@ -1300,6 +1481,23 @@ setInterval(()=>{
 },1000);
 
 App.boot();
+
+/* 全画面ボタン（左下・1回だけ生成） */
+(function(){
+  const btn=el('button',{id:'fs-btn',class:'fs-btn',title:'全画面 / 解除'});
+  btn.textContent='⛶';
+  btn.addEventListener('click',()=>{
+    if(!document.fullscreenElement){
+      document.documentElement.requestFullscreen().catch(()=>{});
+    } else {
+      document.exitFullscreen().catch(()=>{});
+    }
+  });
+  document.addEventListener('fullscreenchange',()=>{
+    btn.textContent = document.fullscreenElement ? '⊡' : '⛶';
+  });
+  document.body.append(btn);
+})();
 </script>
 </body>
 </html>
