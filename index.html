@@ -571,6 +571,13 @@ const U = {
   loc(id){ return id? Store.find('locations',id):null; },
 };
 
+/* ---------------- タイマー永続化ヘルパー ----------------
+   再読み込み・放置後もタイマーが引き継がれるよう localStorage に保存する */
+const TIMER_KEY = 'studymanager.timer';
+function saveTimer(t){ try{ localStorage.setItem(TIMER_KEY, JSON.stringify(t)); }catch(e){} }
+function loadTimer(){ try{ const s=localStorage.getItem(TIMER_KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function clearTimer(){ try{ localStorage.removeItem(TIMER_KEY); }catch(e){} }
+
 /* ---------------- [STATE] ---------------- */
 const State = {
   tab:'record',
@@ -693,9 +700,9 @@ Views.record = {
     p.append(btns);
     return p;
   },
-  start(){ const t=State.timer; t.running=true; t.startTs=Date.now(); App.renderMain(); },
-  stop(){ const t=State.timer; if(t.running){ t.elapsedSec+=(Date.now()-t.startTs)/1000; t.running=false; t.startTs=null; } App.renderMain(); },
-  discard(){ State.timer={running:false,startTs:null,elapsedSec:0}; App.renderMain(); },
+  start(){ const t=State.timer; t.running=true; t.startTs=Date.now(); saveTimer(t); App.renderMain(); },
+  stop(){ const t=State.timer; if(t.running){ t.elapsedSec+=(Date.now()-t.startTs)/1000; t.running=false; t.startTs=null; } saveTimer(t); App.renderMain(); },
+  discard(){ State.timer={running:false,startTs:null,elapsedSec:0}; clearTimer(); App.renderMain(); },
   save(){
     if(!State.sel.subjectId){ toast('科目を選択してください'); return; }
     const t=State.timer; const dur=Math.round(t.elapsedSec);
@@ -704,6 +711,7 @@ Views.record = {
     Store.add('records',{ id:U.uid(), subjectId:State.sel.subjectId, materialId:State.sel.materialId,
       locationId:State.sel.locationId, start:start.toISOString(), durationSec:dur, note:'', createdAt:new Date().toISOString() });
     State.timer={running:false,startTs:null,elapsedSec:0};
+    clearTimer();
     toast('記録を保存しました'); App.renderMain();
   },
   manual(){
@@ -1299,6 +1307,9 @@ function toast(msg){
 const App = {
   boot(){
     Theme.apply(Theme.current());
+    // タイマーの状態を復元（再読み込み・放置後も引き継ぐ）
+    const saved=loadTimer();
+    if(saved && (saved.running || saved.elapsedSec>0)) State.timer=saved;
     if(Auth.enabled() && Auth.loggedIn()){
       this.renderSyncing();
       Cloud.initialSync()
@@ -1477,6 +1488,7 @@ const App = {
 
 setInterval(()=>{
   const t=State.timer; if(!t.running) return;
+  saveTimer(t);  // 毎秒保存 → 突然の再読み込みやブラウザ終了後も復元できる
   const d=$('#sw-display'); if(d){ d.textContent=U.clock(t.elapsedSec+(Date.now()-t.startTs)/1000); }
 },1000);
 
