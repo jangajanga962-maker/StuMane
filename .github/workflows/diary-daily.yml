@@ -1,0 +1,45 @@
+name: Diary – Daily & Monthly
+
+on:
+  schedule:
+    - cron: '0 20 * * *'   # 05:00 JST (UTC+9 = 20:00 UTC前日)
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system fonts
+        run: sudo apt-get install -y fonts-ipafont-gothic
+
+      - name: Install Python dependencies
+        run: pip install -r diary/scripts/requirements.txt
+
+      - name: Generate daily PDF
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: cd diary/scripts && python generate_daily.py
+
+      - name: Generate monthly PDF (only if 2 days before 1st)
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: cd diary/scripts && python generate_monthly.py
+
+      - name: Commit generated PDFs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "📔 auto: daily diary"
+          file_pattern: diary/output/*.pdf

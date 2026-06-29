@@ -1,0 +1,6 @@
+reportlab
+pypdf
+caldav
+icalendar
+pytz
+requests
