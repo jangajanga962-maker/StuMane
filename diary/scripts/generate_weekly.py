@@ -51,7 +51,8 @@ def run():
     apple_password = os.environ["APPLE_APP_PASSWORD"]
 
     start_dt = JST.localize(datetime(next_monday.year, next_monday.month, next_monday.day, 0, 0))
-    end_dt = JST.localize(datetime(next_sunday.year, next_sunday.month, next_sunday.day, 23, 59))
+    # C5 fix: use midnight of next day (exclusive) per RFC 4791 CalDAV
+    end_dt = JST.localize(datetime(next_sunday.year, next_sunday.month, next_sunday.day)) + timedelta(days=1)
     events = fetch_events(apple_id, apple_password, start_dt, end_dt)
 
     EVENTS_BY_DAY = {}

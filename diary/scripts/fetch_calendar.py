@@ -25,15 +25,17 @@ def fetch_events(apple_id: str, app_password: str,
         principal = client.principal()
         calendars = principal.calendars()
     except Exception as e:
-        print(f"CalDAV connection error: {e}")
-        return []
+        # C4 fix: surface connection errors so the workflow fails instead of writing a blank PDF
+        raise RuntimeError(f"CalDAV connection failed: {e}") from e
 
     events = []
+    failed_cals = []
     for cal in calendars:
         try:
             results = cal.date_search(start=start_dt, end=end_dt, expand=True)
         except Exception as e:
-            print(f"Warning: skipping calendar {cal}: {e}")
+            # C10 fix: track per-calendar failures rather than swallowing them silently
+            failed_cals.append((str(cal), str(e)))
             continue
 
         for ev_obj in results:
@@ -66,7 +68,9 @@ def fetch_events(apple_id: str, app_password: str,
 
                     if dtend is not None:
                         if isinstance(dtend, date) and not isinstance(dtend, datetime):
-                            dtend = JST.localize(datetime(dtend.year, dtend.month, dtend.day))
+                            # C6 fix: RFC 5545 all-day DTEND is exclusive; subtract 1 day
+                            dtend_adj = dtend - timedelta(days=1)
+                            dtend = JST.localize(datetime(dtend_adj.year, dtend_adj.month, dtend_adj.day))
                         elif dtend.tzinfo is None:
                             dtend = JST.localize(dtend)
                         else:
@@ -81,6 +85,11 @@ def fetch_events(apple_id: str, app_password: str,
                     })
             except Exception as e:
                 print(f"Warning: could not parse event: {e}")
+
+    if failed_cals:
+        print(f"WARNING: {len(failed_cals)} calendar(s) failed to fetch:")
+        for cal_name, err in failed_cals:
+            print(f"  - {cal_name}: {err}")
 
     events.sort(key=lambda e: e["start"])
     return events

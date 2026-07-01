@@ -66,7 +66,9 @@ def run():
         else:
             s, e = ev["start"], ev["end"]
             title = ev["title"] + (f" @{ev['location']}" if ev["location"] else "")
-            TIMED.append((s.hour, s.minute, e.hour, e.minute, title))
+            # C1 fix: DTEND can be absent in some iCal events; default to 1-hour duration
+            eh, em = (e.hour, e.minute) if e is not None else ((s.hour + 1) % 24, 0)
+            TIMED.append((s.hour, s.minute, eh, em, title))
 
     tasks = fetch_tasks(notion_token, today)
     BLOCK2, BLOCK3 = tasks["block2"], tasks["block3"]

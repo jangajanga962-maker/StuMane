@@ -53,7 +53,9 @@ def run():
 
     _, last_day = calendar.monthrange(year, month)
     start_dt = JST.localize(datetime(year, month, 1, 0, 0))
-    end_dt = JST.localize(datetime(year, month, last_day, 23, 59))
+    # C5 fix: use first day of next month (exclusive) per RFC 4791 CalDAV
+    next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
+    end_dt = JST.localize(datetime(next_year, next_month, 1, 0, 0))
     events = fetch_events(apple_id, apple_password, start_dt, end_dt)
 
     EVENTS_BY_DATE = {}

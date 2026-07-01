@@ -29,14 +29,27 @@ def fetch_tasks(token: str, target_date: date = None) -> dict:
     }
 
     url = f"{BASE_URL}/databases/{DATABASE_ID}/query"
-    resp = requests.post(url, headers=headers, json=payload, timeout=30)
-    resp.raise_for_status()
+
+    # C2 fix: paginate through all results
+    all_results = []
+    cursor = None
+    while True:
+        paged = dict(payload)
+        if cursor:
+            paged["start_cursor"] = cursor
+        resp = requests.post(url, headers=headers, json=paged, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        all_results.extend(data.get("results", []))
+        if not data.get("has_more"):
+            break
+        cursor = data.get("next_cursor")
 
     block2 = []
     block3 = []
     target_str = target_date.isoformat() if target_date else None
 
-    for page in resp.json().get("results", []):
+    for page in all_results:
         props = page.get("properties", {})
 
         title = "".join(
@@ -54,7 +67,7 @@ def fetch_tasks(token: str, target_date: date = None) -> dict:
 
             if sched_start == target_str:
                 pass  # include
-            elif dead_start and dead_start <= target_str:
+            elif dead_start and dead_start == target_str:
                 pass  # past-due
             else:
                 continue
